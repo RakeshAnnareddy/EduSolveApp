@@ -3,7 +3,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById('searchInput');
     const actionButton = document.getElementById('actionButton');
     const actionIcon = document.getElementById('actionIcon');
+    const explainButton = document.getElementById('explainButton');
+    const summarizeButton = document.getElementById('summarizeButton');
+    const fileUpload = document.getElementById('fileUpload');
+    const readerContent = document.getElementById('reader-content');
+    const fileNameDisplay = document.getElementById('file-name');
+    const cancelUploadButton = document.getElementById('cancelUpload');
+    const initialUploadArea = document.getElementById('initial-upload-area');
 
+    
     function scrollToBottom() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -13,19 +21,13 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     observer.observe(chatBox, { childList: true });
-
     scrollToBottom();
 
     searchInput.addEventListener('input', function () {
+        this.rows = this.value.split('\n').length; // Auto-adjust rows based on content
         if (searchInput.value.trim() !== '') {
             actionIcon.style.display = 'none';
-            actionButton.innerHTML = `
-                <span class="send-button">
-                    <svg width="24" height="24" viewBox="0 0 24 24">
-                        <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="#777"/>
-                    </svg>
-                </span>
-            `;
+            actionButton.innerHTML = `<span class="send-button"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="#777"/></svg></span>`;
             actionButton.onclick = sendMessage;
         } else {
             resetActionButton();
@@ -33,8 +35,16 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     searchInput.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            event.preventDefault();
+        if (event.key === 'Enter' && event.shiftKey) {
+            // Insert a new line without sending the message
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            this.value = this.value.substring(0, start) + '\n' + this.value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 1;
+            event.preventDefault(); // Prevent default Enter key behavior (sending form)
+            this.rows = this.value.split('\n').length; // Adjust rows
+        } else if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); // Prevent default Enter key behavior
             sendMessage();
         }
     });
@@ -45,10 +55,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const userMessage = document.createElement('div');
         userMessage.classList.add('user-message');
-        userMessage.textContent = userInput;
+        userMessage.textContent = userInput.replace(/\n/g, '<br>'); // Preserve line breaks in display
         chatBox.appendChild(userMessage);
 
         searchInput.value = "";
+        searchInput.rows = 1; // Reset rows
         resetActionButton();
 
         fetch("https://edusolveapp.onrender.com/generate", {
@@ -126,14 +137,6 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .catch(err => console.error("Error copying:", err));
     }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-    const fileUpload = document.getElementById('fileUpload');
-    const readerContent = document.getElementById('reader-content');
-    const fileNameDisplay = document.getElementById('file-name');
-    const cancelUploadButton = document.getElementById('cancelUpload');
-    const initialUploadArea = document.getElementById('initial-upload-area');
 
     if (cancelUploadButton) {
         cancelUploadButton.addEventListener('click', function() {
@@ -187,4 +190,76 @@ document.addEventListener("DOMContentLoaded", function () {
             cancelUploadButton.style.display = 'none';
         }
     });
+
+    // Event listeners for Explain and Summarize buttons
+    if (explainButton) {
+        explainButton.addEventListener('click', function() {
+            const selectedText = window.getSelection().toString().trim();
+            const currentInput = searchInput.value.trim();
+            let prompt = "";
+            if (selectedText) {
+                prompt = `Explain this: "${selectedText}"`;
+            } else if (currentInput) {
+                prompt = `Explain this: "${currentInput}"`;
+            } else {
+                alert("Please select text or enter something to explain.");
+                return;
+            }
+            searchInput.value = prompt;
+            sendMessage(); // Or create a specific 'explain' function
+        });
+    }
+
+    if (summarizeButton) {
+        summarizeButton.addEventListener('click', function() {
+            const selectedText = window.getSelection().toString().trim();
+            const currentInput = searchInput.value.trim();
+            let prompt = "";
+            if (selectedText) {
+                prompt = `Summarize this: "${selectedText}"`;
+            } else if (currentInput) {
+                prompt = `Summarize this: "${currentInput}"`;
+            } else {
+                alert("Please select text or enter something to summarize.");
+                return;
+            }
+            searchInput.value = prompt;
+            sendMessage(); // Or create a specific 'summarize' function
+        });
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chatBox = document.getElementById('chat-box');
+
+    if (chatBox) {
+        chatBox.addEventListener('selectstart', function(e) {
+            if (e.target.classList.contains('bot-message') || e.target.closest('.bot-message')) {
+                e.preventDefault();
+            }
+        });
+
+        chatBox.addEventListener('mousedown', function(e) {
+            // Optional: Prevent default behavior on bot message elements
+        });
+
+        chatBox.addEventListener('mouseup', function(e) {
+            if (window.getSelection().toString().length > 0 && (e.target.classList.contains('bot-message') || e.target.closest('.bot-message'))) {
+                window.getSelection().empty(); // Or window.getSelection().removeAllRanges();
+            }
+        });
+
+        chatBox.addEventListener('copy', function(e) {
+            if (e.target.classList.contains('bot-message') || e.target.closest('.bot-message')) {
+                e.preventDefault();
+            }
+        });
+
+        chatBox.addEventListener('contextmenu', function(e) {
+            if (e.target.classList.contains('bot-message') || e.target.closest('.bot-message')) {
+                e.preventDefault();
+            }
+        });
+    }
 });

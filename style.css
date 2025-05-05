@@ -219,54 +219,79 @@ body.sidebar-collapsed .main-content {
 
 /* Search Container */
 .search-container {
-    position: static;
-    bottom: auto;
-    left: auto;
-    transform: none;
-    display: flex;
-    align-items: center;
-    border: 1px solid #ccc;
-    border-radius: 24px;
-    padding: 8px 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin: 10px;
+    padding: 10px;
+    border-top: 1px solid #eee;
 }
 
-/* Search Bar */
 .search-bar {
     display: flex;
-    align-items: center;
-    width: 100%;
-    background-color: #f8f9fa;
+    flex-direction: column; /* Stack items vertically */
+    border: 1px solid #ccc;
     border-radius: 20px;
+    padding: 10px;
+}
+
+#searchInput {
+    width: 100%; /* Make the textarea take full width */
     padding: 8px;
-    border: 1px solid #e0e0e0;
-}
-
-.search-bar label.plus-icon {
-    font-size: 20px;
-    color: #777;
-    cursor: pointer;
-    margin-left: 8px;
-    margin-right: 8px;
-}
-
-.search-bar input[type="text"] {
-    flex-grow: 1;
     border: none;
+    font-size: 1em;
+    line-height: 1.5;
+    resize: vertical;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+    min-height: 30px;
+    overflow-y: auto;
     outline: none;
-    padding: 8px;
-    font-size: 16px;
-    width: auto;
-    background-color: transparent;
+    margin-bottom: 10px; /* Space below textarea */
+    max-height: 150px; /* Optional: Set a maximum visible height before scrolling */
 }
 
-.search-bar button {
+.controls-row {
+    display: flex;
+    align-items: center;
+}
+
+.input-controls {
+    display: flex;
+    align-items: center;
+    margin-right: auto; /* Push buttons to the left */
+}
+
+.plus-icon {
+    font-size: 1.5em;
+    cursor: pointer;
+    margin-right: 10px;
+    color: #777;
+}
+
+.action-button {
+    background: none;
+    border: 1px solid #ccc;
+    color: #555;
+    padding: 5px 10px;
+    margin-right: 5px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.action-button:hover {
+    background-color: #f0f0f0;
+}
+
+#actionButton {
     background: none;
     border: none;
+    padding: 0;
     cursor: pointer;
-    padding: 8px;
-    margin-left: auto;
+    margin-left: 10px; /* Space between buttons and mic */
+}
+
+.mic-icon svg {
+    width: 24px;
+    height: 24px;
+    fill: #777;
 }
 
 /* Footer */
@@ -395,3 +420,77 @@ body.sidebar-collapsed .main-content {
     background-color: #3730a3;
 }
   
+/* profile */
+.chat-header {
+    padding: 10px;
+    border-bottom: 1px solid #eee; /* Optional header border */
+    display: flex;
+    justify-content: flex-end; /* Align profile to the right */
+}
+
+.profile-dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%; /* Make it a circle */
+    overflow: hidden; /* Hide any part of the image that goes outside the circle */
+    cursor: pointer;
+    border: 1px solid #ccc; /* Optional border */
+}
+
+.profile-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Ensure the image covers the circle without distortion */
+}
+
+.dropdown-content {
+    display: none; /* Initially hidden */
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 120px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    right: 0; /* Align dropdown to the right */
+    top: 100%; /* Position below the profile icon */
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+.dropdown-content a {
+    color: black;
+    padding: 10px 12px;
+    text-decoration: none;
+    display: block;
+}
+
+.dropdown-content a:hover {
+    background-color: #ddd;
+}
+
+.profile-dropdown:hover .dropdown-content {
+    display: block; /* Show dropdown on hover */
+}
+
+#chat-box {
+    flex-grow: 1; /* Allow chat box to take up remaining vertical space */
+    padding: 10px;
+    overflow-y: auto; /* Enable scrolling for long chats */
+}
+
+.search-container {
+    padding: 10px;
+    border-top: 1px solid #eee; /* Optional separator */
+}
+
+.bot-message{
+    -webkit-user-select: none; /* Prevent selection */
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    cursor: not-allowed; /* Change cursor on hover */
+}
