@@ -250,30 +250,44 @@ document.getElementById("submitQuery").addEventListener("click", async () => {
 });
 
 
-document.getElementById('fileUpload').addEventListener('change', async function (event) {
+document.getElementById('fileUpload').addEventListener('change', function(event) {
     const file = event.target.files[0];
-  
-    if (!file) return;
-  
-    const formData = new FormData();
-    formData.append('file', file);
-  
-    try {
-      const response = await fetch('https://edusolveapp.onrender.com/upload-docx', {
-        method: 'POST',
-        body: formData,
-      });
-  
-      const data = await response.json();
-  
-      if (data.content) {
-        // Display the DOCX content in your app (adjust DOM target as needed)
-        document.getElementById('docxContent').textContent = data.content;
-      } else {
-        console.error('Error:', data.error);
-      }
-    } catch (err) {
-      console.error('Fetch error:', err);
+    
+    if (file && file.name.endsWith('.docx')) {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        // Show the file name
+        document.getElementById('file-name').innerText = `File selected: ${file.name}`;
+        document.getElementById('file-name').style.display = 'block';
+        document.getElementById('initial-upload-area').style.display = 'none';
+        document.getElementById('cancelUpload').style.display = 'inline-block';
+
+        // Make a request to upload the file to the server
+        fetch('https://edusolveapp.onrender.com/upload-docx', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json())
+          .then(data => {
+              // Handle response from the server
+              if (data.success) {
+                  alert('File uploaded successfully');
+              } else {
+                  alert('File upload failed');
+              }
+          })
+          .catch(error => {
+              console.error('Error uploading file:', error);
+          });
+    } else {
+        alert('Please upload a valid .docx file');
     }
-  });
-  
+});
+
+document.getElementById('cancelUpload').addEventListener('click', function() {
+    document.getElementById('fileUpload').value = ''; // Reset file input
+    document.getElementById('file-name').style.display = 'none';
+    document.getElementById('initial-upload-area').style.display = 'block';
+    document.getElementById('cancelUpload').style.display = 'none';
+});
+
