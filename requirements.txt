@@ -1,6 +1,6 @@
 flask
-flask_cors
+flask-cors
+python-docx
 python-dotenv
-huggingface_hub
+huggingface-hub
 gunicorn
-docx
