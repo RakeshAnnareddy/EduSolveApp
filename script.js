@@ -250,7 +250,7 @@ document.getElementById("submitQuery").addEventListener("click", async () => {
 });
 
 
-document.getElementById('fileInput').addEventListener('change', async function (event) {
+document.getElementById('fileUpload').addEventListener('change', async function (event) {
     const file = event.target.files[0];
   
     if (!file) return;
