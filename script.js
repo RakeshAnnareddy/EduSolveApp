@@ -227,6 +227,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+
 document.getElementById("submitQuery").addEventListener("click", async () => {
     const selectedText = window.getSelection().toString().trim();
     const query = document.getElementById("userQuery").value.trim();
@@ -247,3 +248,32 @@ document.getElementById("submitQuery").addEventListener("click", async () => {
     const data = await res.json();
     document.getElementById("response").innerText = data.response || "No response received.";
 });
+
+
+document.getElementById('fileInput').addEventListener('change', async function (event) {
+    const file = event.target.files[0];
+  
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append('file', file);
+  
+    try {
+      const response = await fetch('https://edusolveapp.onrender.com/upload-docx', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      const data = await response.json();
+  
+      if (data.content) {
+        // Display the DOCX content in your app (adjust DOM target as needed)
+        document.getElementById('docxContent').textContent = data.content;
+      } else {
+        console.error('Error:', data.error);
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+    }
+  });
+  
