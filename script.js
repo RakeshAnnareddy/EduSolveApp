@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", function () {
         searchInput.value = "";
         resetActionButton();
 
-        fetch("https://llma3.onrender.com/generate", {
+        fetch("https://edusolveapp.onrender.com/generate", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -236,7 +236,7 @@ document.getElementById("submitQuery").addEventListener("click", async () => {
         return;
     }
 
-    const res = await fetch("https://llma3.onrender.com/analyze-selection", {
+    const res = await fetch("https://edusolveapp.onrender.com/analyze-selection", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"

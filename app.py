@@ -13,7 +13,7 @@ CORS(app)  # Allows frontend (HTML/JS) to access API
 HF_API_TOKEN = os.getenv("HFE_API_TOKEN")  # Securely fetch token
 
 # Load the Hugging Face LLM with authentication
-client = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=HF_API_TOKEN)
+client = InferenceClient("meta-llama/Llama-2-7b-chat-hf", token=HF_API_TOKEN)
 
 def generate_response(prompt):
     # Predefined responses for common inputs
