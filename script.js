@@ -3,105 +3,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById('searchInput');
     const actionButton = document.getElementById('actionButton');
     const actionIcon = document.getElementById('actionIcon');
-    const fileInput = document.getElementById('fileInput');
-    const menuToggle = document.getElementById('menu-toggle');
-    const sidebar = document.getElementById('sidebar');
-    const mainContent = document.getElementById('main-content');
-    const fileUpload = document.getElementById('fileUpload');
-    const readerContent = document.getElementById('reader-content');
-    const fileNameDisplay = document.getElementById('file-name');
-    const cancelUploadButton = document.getElementById('cancelUpload');
-    const initialUploadArea = document.getElementById('initial-upload-area');
-    const newUploadButton = document.getElementById('newUpload');
-
-    let isSidebarCollapsed = true; // Start in collapsed state
-
-    // Apply initial collapsed state
-    document.body.classList.add('sidebar-collapsed');
-    sidebar.classList.add('collapsed');
-    mainContent.classList.add('collapsed');
-
-    if (menuToggle) {
-        menuToggle.addEventListener('click', function() {
-            isSidebarCollapsed = !isSidebarCollapsed;
-            sidebar.classList.toggle('collapsed', isSidebarCollapsed);
-            mainContent.classList.toggle('collapsed', isSidebarCollapsed ? 'collapsed' : 'expanded');
-            document.body.classList.toggle('sidebar-collapsed', isSidebarCollapsed);
-        });
-    }
-
-    if (newUploadButton) {
-        newUploadButton.addEventListener('click', function() {
-            fileUpload.click(); // Trigger file input click
-        });
-    }
-
-    if (cancelUploadButton) {
-        cancelUploadButton.addEventListener('click', function() {
-            fileUpload.value = ''; // Clear the file input
-            fileNameDisplay.style.display = 'none';
-            cancelUploadButton.style.display = 'none';
-            readerContent.innerHTML = '';
-            readerContent.style.display = 'flex';
-            readerContent.appendChild(initialUploadArea);
-        });
-    }
-
-    fileUpload.addEventListener('change', function() {
-        if (this.files.length > 0) {
-            const file = this.files[0];
-
-            fileNameDisplay.textContent = `Selected file: ${file.name}`;
-            fileNameDisplay.style.display = 'block';
-            cancelUploadButton.style.display = 'inline-block';
-            readerContent.innerHTML = '';
-            readerContent.style.display = 'block';
-            initialUploadArea.remove(); // Remove initial upload area
-
-            const fileType = file.type;
-            if (fileType.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    readerContent.appendChild(img);
-                    // No need for inline style here, moved to CSS
-                }
-                reader.readAsDataURL(file);
-            } else if (fileType === 'application/pdf') {
-                const embed = document.createElement('embed');
-                embed.src = URL.createObjectURL(file);
-                embed.type = 'application/pdf';
-                // No need for inline style here, moved to CSS
-                readerContent.appendChild(embed);
-            } else {
-                readerContent.textContent = `Unsupported file type: ${fileType}. Please upload an image or PDF.`;
-            }
-        }
-    });
-
-    function adjustUserMessageWidth() {
-        document.querySelectorAll(".user-message").forEach(msg => {
-            let textLength = msg.innerText.length;
-            let baseWidth = 100;
-            let maxWidth = 300;
-            let calculatedWidth = Math.min(baseWidth + textLength * 8, maxWidth);
-            msg.style.maxWidth = `${calculatedWidth}px`;
-        });
-    }
 
     function scrollToBottom() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
 
     const observer = new MutationObserver(() => {
-        adjustUserMessageWidth();
         scrollToBottom();
     });
 
     observer.observe(chatBox, { childList: true });
 
-    adjustUserMessageWidth();
     scrollToBottom();
 
     searchInput.addEventListener('input', function () {
@@ -124,17 +36,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (event.key === 'Enter') {
             event.preventDefault();
             sendMessage();
-        }
-    });
-
-    fileInput.addEventListener('change', function () {
-        if (fileInput.files.length > 0) {
-            for (let file of fileInput.files) {
-                console.log("File selected for chat:", file.name);
-                // You can add logic here to handle file uploads in the chat if needed
-            }
-            // Clear the file input after handling (optional)
-            fileInput.value = '';
         }
     });
 
@@ -227,67 +128,63 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+    const fileUpload = document.getElementById('fileUpload');
+    const readerContent = document.getElementById('reader-content');
+    const fileNameDisplay = document.getElementById('file-name');
+    const cancelUploadButton = document.getElementById('cancelUpload');
+    const initialUploadArea = document.getElementById('initial-upload-area');
 
-document.getElementById("submitQuery").addEventListener("click", async () => {
-    const selectedText = window.getSelection().toString().trim();
-    const query = document.getElementById("userQuery").value.trim();
-  
-    if (!selectedText || !query) {
-        alert("Please select some text and provide a query.");
-        return;
+    if (cancelUploadButton) {
+        cancelUploadButton.addEventListener('click', function() {
+            fileUpload.value = ''; // Clear the file input
+            fileNameDisplay.style.display = 'none';
+            cancelUploadButton.style.display = 'none';
+            readerContent.innerHTML = '';
+            readerContent.style.display = 'flex';
+            readerContent.appendChild(initialUploadArea);
+        });
     }
 
-    const res = await fetch("https://edusolveapp.onrender.com/analyze-selection", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ selected_text: selectedText, query })
+    fileUpload.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const file = this.files[0];
+
+            fileNameDisplay.textContent = `Selected file: ${file.name}`;
+            fileNameDisplay.style.display = 'block';
+            cancelUploadButton.style.display = 'inline-block';
+            readerContent.innerHTML = '';
+            readerContent.style.display = 'block';
+            initialUploadArea.remove(); // Remove initial upload area
+
+            const fileType = file.type;
+            if (fileType === 'application/pdf') {
+                const embed = document.createElement('embed');
+                embed.src = URL.createObjectURL(file);
+                embed.type = 'application/pdf';
+                embed.style.width = '100%'; // Make it fill the container
+                embed.style.height = '100%';
+                readerContent.appendChild(embed);
+            } else if (fileType.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.maxWidth = '100%'; // Responsive image
+                    img.style.maxHeight = '100%';
+                    readerContent.appendChild(img);
+                }
+                reader.readAsDataURL(file);
+            } else {
+                readerContent.textContent = `Unsupported file type: ${fileType}. Please upload an image or PDF.`;
+            }
+        } else {
+            // No file selected, you might want to handle this (e.g., show the upload area again)
+            readerContent.innerHTML = '';
+            readerContent.style.display = 'flex';
+            readerContent.appendChild(initialUploadArea);
+            fileNameDisplay.style.display = 'none';
+            cancelUploadButton.style.display = 'none';
+        }
     });
-
-    const data = await res.json();
-    document.getElementById("response").innerText = data.response || "No response received.";
 });
-
-
-document.getElementById('fileUpload').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    
-    if (file && file.name.endsWith('.docx')) {
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Show the file name
-        document.getElementById('file-name').innerText = `File selected: ${file.name}`;
-        document.getElementById('file-name').style.display = 'block';
-        document.getElementById('initial-upload-area').style.display = 'none';
-        document.getElementById('cancelUpload').style.display = 'inline-block';
-
-        // Make a request to upload the file to the server
-        fetch('https://edusolveapp.onrender.com/upload-docx', {
-            method: 'POST',
-            body: formData
-        }).then(response => response.json())
-          .then(data => {
-              // Handle response from the server
-              if (data.success) {
-                  alert('File uploaded successfully');
-              } else {
-                  alert('File upload failed');
-              }
-          })
-          .catch(error => {
-              console.error('Error uploading file:', error);
-          });
-    } else {
-        alert('Please upload a valid .docx file');
-    }
-});
-
-document.getElementById('cancelUpload').addEventListener('click', function() {
-    document.getElementById('fileUpload').value = ''; // Reset file input
-    document.getElementById('file-name').style.display = 'none';
-    document.getElementById('initial-upload-area').style.display = 'block';
-    document.getElementById('cancelUpload').style.display = 'none';
-});
-
