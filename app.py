@@ -1,12 +1,16 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env
 
 app = Flask(__name__)
 CORS(app)  # Allows frontend (HTML/JS) to access API
 
 # Use your Hugging Face API Token
-HF_API_TOKEN = "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"
+HF_API_TOKEN = os.getenv("HFE_API_TOKEN")  # Securely fetch token
 
 # Load the Hugging Face LLM with authentication
 client = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=HF_API_TOKEN)
