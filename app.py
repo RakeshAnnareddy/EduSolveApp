@@ -6,10 +6,10 @@ app = Flask(__name__)
 CORS(app)  # Allows frontend (HTML/JS) to access API
 
 # Use your Hugging Face API Token
-HF_API_TOKEN = "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"
+HF_API_TOKEN = "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"
 
 # Load the Hugging Face LLM with authentication
-client = InferenceClient("mistralai/Mistral-7B-Instruct-v0.3", token=HF_API_TOKEN)
+client = InferenceClient("meta-llama/Meta-Llama-3-8B-Instruct", token=HF_API_TOKEN)
 
 def generate_response(prompt):
     # Predefined responses for common inputs
