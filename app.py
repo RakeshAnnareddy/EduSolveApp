@@ -77,7 +77,7 @@ def analyze_selection():
     if "summarize" in user_query:
         prompt = f"Summarize this text:\n\n{selected_text}"
     elif "explain" in user_query:
-        prompt = f"Explain this in simple terms suitable for a 10th-grade student:\n\n{selected_text}"
+        prompt = f"Explain this in simple terms suitable for a 10th-grade student in just 10 lines :\n\n{selected_text}"
     else:
         prompt = f"{user_query}\n\nContext:\n{selected_text}"
 
