@@ -1,0 +1,397 @@
+/* General Styling */
+body {
+    display: flex;
+    font-family: Arial, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    overflow: hidden; /* To prevent scrollbars on the body */
+}
+
+body.sidebar-collapsed .main-content {
+    margin-left: 60px;
+    width: calc(100% - 60px);
+}
+
+.sidebar {
+    width: 250px; /* Full width */
+    background-color: #f8f9fa; /* Light background color */
+    border-right: 1px solid #dee2e6; /* Subtle border */
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10; /* Ensure it's above other content */
+    transition: width 0.3s ease; /* Smooth transition for toggle */
+}
+
+.sidebar.collapsed {
+    width: 60px; /* Collapsed width */
+}
+
+.sidebar.collapsed .sidebar-header span {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-content > div:not(.sidebar-separator) span,
+.sidebar.collapsed .sidebar-recent p,
+.sidebar.collapsed .sidebar-item.recent-item span,
+.sidebar.collapsed .sidebar-item.show-more span,
+.sidebar.collapsed .sidebar-footer .sidebar-item span {
+    display: none; /* Hide text in content and footer when collapsed */
+}
+
+.sidebar.collapsed .sidebar-item {
+    justify-content: center; /* Center icons when collapsed */
+    padding: 10px;
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    color: #343a40; /* Dark text color */
+}
+
+.sidebar-content {
+    padding: 15px;
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.sidebar-item {
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    color: #495057; /* Medium dark text color */
+}
+
+.sidebar-item.active, .sidebar-item:hover {
+    background-color: #e9ecef; /* Light hover/active background */
+    color: #007bff; /* Primary color for active/hover */
+}
+
+.sidebar-separator {
+    border-bottom: 1px solid #dee2e6;
+    margin: 15px 0;
+}
+
+.sidebar-recent p {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    color: #6c757d; /* Light grey text */
+}
+
+.sidebar-item.recent-item {
+    font-size: 0.95rem;
+}
+
+.sidebar-item.show-more {
+    color: #007bff;
+    justify-content: center;
+}
+
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid #dee2e6;
+    display: flex;
+    justify-content: center;
+}
+
+.sidebar-footer .sidebar-item.settings {
+    justify-content: flex-start;
+}
+
+.main-content {
+    display: flex;
+    margin-left: 60px; /* Initial margin for collapsed sidebar */
+    width: calc(100% - 60px);
+    height: 100vh;
+    transition: margin-left 0.3s ease, width 0.3s ease; /* Smooth transition for content */
+}
+
+.main-content.expanded {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+}
+
+/* Reader Frame */
+#reader-frame {
+    flex: 0 0 60%; /* 60% width */
+    border-right: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%; /* Occupy full height of main content */
+}
+
+.reader-header {
+    display: flex;
+    width: 100%;
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+    justify-content: flex-start;
+    gap: 10px;
+    align-items: center;
+}
+
+.new-upload-button,
+.cancel-button {
+    background: none;
+    border: 1px solid #ccc;
+    color: #555;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: border-color 0.3s ease, color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.new-upload-button:hover,
+.cancel-button:hover {
+    border-color: #333;
+    color: #333;
+}
+
+#reader-content {
+    width: 100%;
+    height: calc(100% - 60px); /* Adjust for header */
+    overflow-y: auto;
+    padding: 0; /* Remove padding to allow full usage of space */
+    text-align: left;
+    display: block; /* Change to block to allow content to take full space */
+}
+
+#reader-content img {
+    display: block; /* Prevent extra space below image */
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    margin: auto; /* Center the image if it's smaller than the container */
+}
+
+#reader-content embed {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Chat Container */
+#chat-container {
+    flex: 0 0 40%; /* 40% width */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Chat Box */
+#chat-box {
+    flex-grow: 1;
+    overflow-y: scroll;
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hide Scrollbar */
+#chat-box::-webkit-scrollbar {
+    display: none;
+}
+
+#chat-box {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+/* Search Container */
+.search-container {
+    position: static;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 24px;
+    padding: 8px 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin: 10px;
+}
+
+/* Search Bar */
+.search-bar {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background-color: #f8f9fa;
+    border-radius: 20px;
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.search-bar label.plus-icon {
+    font-size: 20px;
+    color: #777;
+    cursor: pointer;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+.search-bar input[type="text"] {
+    flex-grow: 1;
+    border: none;
+    outline: none;
+    padding: 8px;
+    font-size: 16px;
+    width: auto;
+    background-color: transparent;
+}
+
+.search-bar button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    margin-left: auto;
+}
+
+/* Footer */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #777;
+    font-size: 12px;
+    padding: 10px;
+    z-index: 20;
+}
+
+/* Icons */
+.plus-icon, .send-icon, .mic-icon, .send-button {
+    font-size: 24px;
+    color: #555;
+    cursor: pointer;
+}
+
+/* User Messages */
+.user-message {
+    background: #d1e7ff;
+    padding: 10px 15px;
+    border-radius: 15px 15px 0 15px;
+    margin: 5px 10px;
+    display: inline-block;
+    max-width: 70%;
+    word-wrap: break-word;
+    margin-top: 30px;
+    align-self: flex-end;
+    margin-left: auto;
+    text-align: left;
+}
+
+/* Bot Messages */
+.bot-message {
+    margin-top: 20px;
+    text-align: left;
+    margin-bottom: 10px;
+    padding-left: 10px;
+}
+
+/* List Styles */
+#chat-box ul,
+#chat-box ol {
+    list-style-type: disc;
+    margin-left: 20px;
+    margin-bottom: 10px;
+    padding-left: 0;
+    display: block;
+}
+
+#chat-box ol {
+    list-style-type: decimal;
+}
+
+#chat-box li {
+    margin-bottom: 5px;
+}
+
+/* ============================ */
+/* Code Block Styling    */
+/* ============================ */
+
+.code-block {
+    background-color: #d1e7ff;
+    padding: 20px; /* Increased padding */
+    border-radius: 5px;
+    overflow-x: auto;
+    margin-bottom: 10px;
+    position: relative;
+}
+
+.code-block pre {
+    margin: 0;
+    white-space: pre-wrap; /* Allows line wrapping */
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 0; /* Remove unnecessary padding inside pre */
+    word-break: break-all; /* Breaks long words to prevent overflow */
+}
+
+.language-indicator {
+    background-color: #ddd;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-size: 12px;
+    position: absolute;
+    top: 10px; /* Adjusted top position */
+    left: 10px;
+}
+
+.copy-btn {
+    background-color: #ddd;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    position: absolute;
+    top: 10px; /* Adjusted top position */
+    right: 10px;
+    z-index: 10;
+}
+
+.copy-btn:hover {
+    background-color: #ccc;
+}
+
+/* Pricing Button */
+.btn {
+    display: inline-block;
+    padding: 10px 25px;
+    background-color: #4f46e5;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  .btn:hover {
+    background-color: #3730a3;
+  }
+  

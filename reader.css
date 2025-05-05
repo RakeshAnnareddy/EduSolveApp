@@ -1,0 +1,63 @@
+/* Styling for the upload area in the reader frame */
+.upload-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 80%;
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.upload-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px 25px;
+    background-color: #f0f0f0;
+    color: #555;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.upload-button:hover {
+    background-color: #e0e0e0;
+}
+
+.upload-button svg {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 8px;
+    stroke: #555;
+}
+
+.cancel-button {
+    background: none;
+    border: 1px solid #ccc;
+    color: #555;
+    padding: 8px 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 15px;
+    transition: border-color 0.3s ease, color 0.3s ease;
+    display: none; /* Hidden by default */
+}
+
+.cancel-button:hover {
+    border-color: #333;
+    color: #333;
+}
+
+.cancel-button svg {
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    margin-right: 5px;
+    stroke: #555;
+}
