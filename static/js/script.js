@@ -102,7 +102,11 @@ document.addEventListener("DOMContentLoaded", function () {
     function formatBotResponse(botResponse) {
         let formattedResponse = botResponse;
     
-        // Style for headings (assuming AI might prefix headings with #, ##, etc.)
+        // =========================================================================
+        //  Heading Styles
+        //  -----------------------------------------------------------------------
+        //  Detect and style headings (h1 to h6) based on '#' prefixes.
+        // =========================================================================
         formattedResponse = formattedResponse.replace(/^# (.*)$/gm, '<h1>$1</h1>');
         formattedResponse = formattedResponse.replace(/^## (.*)$/gm, '<h2>$1</h2>');
         formattedResponse = formattedResponse.replace(/^### (.*)$/gm, '<h3>$1</h3>');
@@ -110,27 +114,83 @@ document.addEventListener("DOMContentLoaded", function () {
         formattedResponse = formattedResponse.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
         formattedResponse = formattedResponse.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
     
-        // Style for code blocks (using ``` as delimiters)
+        // =========================================================================
+        //  Code Block Styles
+        //  -----------------------------------------------------------------------
+        //  Detect and style code blocks, handling language-specific comments.
+        // =========================================================================
         formattedResponse = formattedResponse.replace(/```(\w+)?\n([\s\S]+?)```/g, (match, lang, code) => {
             lang = lang || "plaintext";
+    
+            // Function to generate language-specific comment prefix
+            function getCommentPrefix(language) {
+                switch (language.toLowerCase()) {
+                    case "javascript":
+                    case "java":
+                    case "c":
+                    case "cpp":
+                    case "c#":
+                    case "go":
+                    case "rust":
+                        return "// ";
+                    case "python":
+                    case "ruby":
+                    case "perl":
+                    case "bash":
+                    case "shell":
+                    case "yaml":
+                    case "dockerfile":
+                    case "powershell":
+                        return "# ";
+                    case "php":
+                        return "// ";
+                    case "sql":
+                    case "mysql":
+                    case "postgresql":
+                        return "-- ";
+                    default:
+                        return "# ";
+                }
+            }
+    
+            const commentPrefix = getCommentPrefix(lang);
+    
+            // Clean up stray h1-h6 tags and treat their content as comments
+            const cleanedCode = code.replace(/<h\d>([^<]+)<\/h\d>/g, (match, content) => {
+                const commentedLines = content.split('\n').map(line => `${commentPrefix}${line}`);
+                return commentedLines.join('\n');
+            });
+    
             return `
                 <div class="code-block">
                     <span class="language-indicator">${escapeHTML(lang)}</span>
-                    <pre><code>${escapeHTML(code)}</code></pre>
+                    <pre><code>${escapeHTML(cleanedCode)}</code></pre>
                     <button class="copy-btn" onclick="copyCode(this)">Copy</button>
                 </div>
             `;
         });
     
-        // Style for unordered lists
+        // =========================================================================
+        //  Unordered List Styles
+        //  -----------------------------------------------------------------------
+        //  Detect and style unordered lists.
+        // =========================================================================
         formattedResponse = formattedResponse.replace(/\n\* (.+)/g, '<ul><li>$1</li></ul>');
         formattedResponse = formattedResponse.replace(/<\/ul>\s*<ul>/g, '');
     
-        // Style for ordered lists
+        // =========================================================================
+        //  Ordered List Styles
+        //  -----------------------------------------------------------------------
+        //  Detect and style ordered lists.
+        // =========================================================================
         formattedResponse = formattedResponse.replace(/\n\d+\.\s+(.+)/g, '<ol><li>$1</li></ol>');
         formattedResponse = formattedResponse.replace(/<\/ol>\s*<ol>/g, '');
     
-        // Style for tables (crude detection - adjust as needed)
+        // =========================================================================
+        //  Table Styles
+        //  -----------------------------------------------------------------------
+        //  Detect and style tables.
+        // =========================================================================
         formattedResponse = formattedResponse.replace(/\|(.+?)\|(.+?)\|/g, (match, header, data) => {
             const headers = header.split('|').map(h => h.trim());
             const rows = data.split('|').map(r => r.trim());
@@ -145,12 +205,23 @@ document.addEventListener("DOMContentLoaded", function () {
         return formattedResponse;
     }
     
+    // =============================================================================
+    //  escapeHTML Function
+    //  ---------------------------------------------------------------------------
+    //  Escapes HTML special characters.
+    // =============================================================================
     function escapeHTML(str) {
         return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
     
+    // =============================================================================
+    //  copyCode Function
+    //  ---------------------------------------------------------------------------
+    //  Copies code to the clipboard.
+    // =============================================================================
     window.copyCode = function(button) {
-        let codeBlock = button.previousElementSibling.previousElementSibling.innerText;
+        // Correctly select the code within the <pre><code> element
+        let codeBlock = button.previousElementSibling.querySelector('code').innerText;
         navigator.clipboard.writeText(codeBlock)
             .then(() => {
                 button.innerText = "Copied!";
