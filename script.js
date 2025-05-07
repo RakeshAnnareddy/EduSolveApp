@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const userMessage = document.createElement('div');
         userMessage.classList.add('user-message');
-        userMessage.textContent = userInput.replace(/\n/g, '<br>'); // Preserve line breaks in display
+        userMessage.textContent = userInput.replace(/\n/g ); // Preserve line breaks in display
         chatBox.appendChild(userMessage);
 
         searchInput.value = "";
