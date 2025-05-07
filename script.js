@@ -11,7 +11,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const cancelUploadButton = document.getElementById('cancelUpload');
     const initialUploadArea = document.getElementById('initial-upload-area');
 
-    
     function scrollToBottom() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }
@@ -55,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const userMessage = document.createElement('div');
         userMessage.classList.add('user-message');
-        userMessage.textContent = userInput.replace(/\n/g ); // Preserve line breaks in display
+        userMessage.textContent = userInput.replace(/\n/g, '<br>'); // Preserve line breaks in display
         chatBox.appendChild(userMessage);
 
         searchInput.value = "";
@@ -103,8 +102,8 @@ document.addEventListener("DOMContentLoaded", function () {
     function formatBotResponse(botResponse) {
         let formattedResponse = botResponse;
 
-        if (formattedResponse.includes("")) {
-            formattedResponse = formattedResponse.replace(/(\w+)?\n([\s\S]+?)/g, (match, lang, code) => {
+        if (formattedResponse.includes("```")) {
+            formattedResponse = formattedResponse.replace(/```(\w+)?\n([\s\S]+?)```/g, (match, lang, code) => {
                 lang = lang || "plaintext";
                 return `
                     <div class="code-block">
@@ -128,7 +127,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
-    function copyCode(button) {
+    window.copyCode = function(button) {
         let codeBlock = button.previousElementSibling.previousElementSibling.innerText;
         navigator.clipboard.writeText(codeBlock)
             .then(() => {
@@ -136,7 +135,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 setTimeout(() => button.innerText = "Copy", 2000);
             })
             .catch(err => console.error("Error copying:", err));
-    }
+    };
 
     if (cancelUploadButton) {
         cancelUploadButton.addEventListener('click', function() {
@@ -201,8 +200,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 prompt = `Explain this: "${selectedText}"`;
             } else if (currentInput) {
                 prompt = `Explain this: "${currentInput}"`;
-            } else {
-                alert("Please select text or enter something to explain.");
+            } else if (readerContent.textContent && readerContent.textContent !== "Drag and drop a file here or click to upload") {
+                prompt = `Explain this content: "${readerContent.textContent}"`;
+            }
+             else {
+                alert("Please select text, enter something in the chat input, or upload a file to explain.");
                 return;
             }
             searchInput.value = prompt;
@@ -219,8 +221,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 prompt = `Summarize this: "${selectedText}"`;
             } else if (currentInput) {
                 prompt = `Summarize this: "${currentInput}"`;
-            } else {
-                alert("Please select text or enter something to summarize.");
+            } else if (readerContent.textContent && readerContent.textContent !== "Drag and drop a file here or click to upload") {
+                prompt = `Summarize this content: "${readerContent.textContent}"`;
+            }
+             else {
+                alert("Please select text, enter something in the chat input, or upload a file to summarize.");
                 return;
             }
             searchInput.value = prompt;
