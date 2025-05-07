@@ -54,7 +54,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const userMessage = document.createElement('div');
         userMessage.classList.add('user-message');
-        userMessage.textContent = userInput.replace(/\n/g, '<br>'); // Preserve line breaks in display
+        userMessage.innerHTML = userInput.replace(/\n/g, '<br>'); // Use innerHTML to render <br> as a line break
         chatBox.appendChild(userMessage);
 
         searchInput.value = "";
@@ -101,32 +101,54 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function formatBotResponse(botResponse) {
         let formattedResponse = botResponse;
-
-        if (formattedResponse.includes("```")) {
-            formattedResponse = formattedResponse.replace(/```(\w+)?\n([\s\S]+?)```/g, (match, lang, code) => {
-                lang = lang || "plaintext";
-                return `
-                    <div class="code-block">
-                        <span class="language-indicator">${lang}</span>
-                        <pre><code>${escapeHTML(code)}</code></pre>
-                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-                    </div>
-                `;
-            });
-        }
-
+    
+        // Style for headings (assuming AI might prefix headings with #, ##, etc.)
+        formattedResponse = formattedResponse.replace(/^# (.*)$/gm, '<h1>$1</h1>');
+        formattedResponse = formattedResponse.replace(/^## (.*)$/gm, '<h2>$1</h2>');
+        formattedResponse = formattedResponse.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+        formattedResponse = formattedResponse.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
+        formattedResponse = formattedResponse.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
+        formattedResponse = formattedResponse.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
+    
+        // Style for code blocks (using ``` as delimiters)
+        formattedResponse = formattedResponse.replace(/```(\w+)?\n([\s\S]+?)```/g, (match, lang, code) => {
+            lang = lang || "plaintext";
+            return `
+                <div class="code-block">
+                    <span class="language-indicator">${escapeHTML(lang)}</span>
+                    <pre><code>${escapeHTML(code)}</code></pre>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+            `;
+        });
+    
+        // Style for unordered lists
         formattedResponse = formattedResponse.replace(/\n\* (.+)/g, '<ul><li>$1</li></ul>');
         formattedResponse = formattedResponse.replace(/<\/ul>\s*<ul>/g, '');
+    
+        // Style for ordered lists
         formattedResponse = formattedResponse.replace(/\n\d+\.\s+(.+)/g, '<ol><li>$1</li></ol>');
         formattedResponse = formattedResponse.replace(/<\/ol>\s*<ol>/g, '');
-
+    
+        // Style for tables (crude detection - adjust as needed)
+        formattedResponse = formattedResponse.replace(/\|(.+?)\|(.+?)\|/g, (match, header, data) => {
+            const headers = header.split('|').map(h => h.trim());
+            const rows = data.split('|').map(r => r.trim());
+            let tableHTML = '<table class="ai-table">';
+            tableHTML += '<thead><tr>';
+            headers.forEach(h => tableHTML += `<th>${h}</th>`);
+            tableHTML += '</tr></thead><tbody><tr>';
+            rows.forEach(r => tableHTML += `<td>${r}</td>`);
+            tableHTML += '</tr></tbody></table>';
+        });
+    
         return formattedResponse;
     }
-
+    
     function escapeHTML(str) {
         return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
-
+    
     window.copyCode = function(button) {
         let codeBlock = button.previousElementSibling.previousElementSibling.innerText;
         navigator.clipboard.writeText(codeBlock)

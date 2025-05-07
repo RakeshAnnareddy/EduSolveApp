@@ -360,7 +360,7 @@ body.sidebar-collapsed .main-content {
 /* ============================ */
 
 .code-block {
-    background-color: #d1e7ff;
+    background-color: #f0f0f0; /* Changed to a neutral color for bot messages */
     padding: 20px; /* Increased padding */
     border-radius: 5px;
     overflow-x: auto;
@@ -379,7 +379,7 @@ body.sidebar-collapsed .main-content {
 }
 
 .language-indicator {
-    background-color: #ddd;
+    background-color: #ccc;
     padding: 5px 10px;
     border-radius: 3px;
     font-size: 12px;
@@ -405,6 +405,121 @@ body.sidebar-collapsed .main-content {
     background-color: #ccc;
 }
 
+/* Heading Styles for Bot Messages */
+#chat-box h1 {
+    font-size: 1.8em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+#chat-box h2 {
+    font-size: 1.5em;
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+#chat-box h3 {
+    font-size: 1.3em;
+    margin-top: 0.8em;
+    margin-bottom: 0.4em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+#chat-box h4 {
+    font-size: 1.1em;
+    margin-top: 0.6em;
+    margin-bottom: 0.3em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+#chat-box h5 {
+    font-size: 1em;
+    margin-top: 0.5em;
+    margin-bottom: 0.2em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+#chat-box h6 {
+    font-size: 0.9em;
+    margin-top: 0.4em;
+    margin-bottom: 0.1em;
+    font-weight: bold;
+    color: #333; /* Adjust color as needed */
+}
+
+/* Table Styles for Bot Messages (Matching Image) */
+.ai-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px; /* Increased bottom margin for better spacing */
+    border: 1px solid #e0e0e0; /* Light gray border for the entire table */
+    border-radius: 8px; /* Slightly rounded corners */
+    overflow: hidden; /* To contain rounded borders */
+}
+
+.ai-table th, .ai-table td {
+    padding: 12px 16px; /* Increased padding for better readability */
+    text-align: left;
+}
+
+.ai-table thead {
+    background-color: #f7f7f7; /* Very light gray background for header */
+    border-bottom: 2px solid #e0e0e0; /* Slightly thicker border for header bottom */
+}
+
+.ai-table th {
+    font-weight: bold;
+    color: #333; /* Darker text for header */
+}
+
+.ai-table tbody tr:nth-child(even) {
+    background-color: #f9f9f9; /* Slightly different background for even rows */
+}
+
+.ai-table tbody tr:last-child td {
+    border-bottom: none; /* Remove border from the last row */
+}
+
+.ai-table th:first-child,
+.ai-table td:first-child {
+    padding-left: 20px; /* Extra left padding for the first column (Feature) */
+}
+
+.ai-table th:last-child,
+.ai-table td:last-child {
+    padding-right: 20px; /* Extra right padding for the last column */
+    text-align: center; /* Center alignment for the "New Plan" column as in the image */
+}
+
+.ai-table th:nth-child(2),
+.ai-table td:nth-child(2) {
+    text-align: center; /* Center alignment for the "Old Plan" column */
+}
+
+/* Specific styling for the "New Plan" column to match the bold text */
+.ai-table td:last-child {
+    font-weight: bold;
+    color: #28a745; /* Example: Green color for emphasis, adjust as needed */
+}
+
+/* Styling for "Cost per Request" to match the lighter text */
+.ai-table tbody tr:nth-child(3) td { /* Targeting the "Cost per Request" row */
+    color: #6c757d; /* Light gray color */
+    font-size: 0.9em; /* Slightly smaller font size */
+}
+
+/* Styling for the "Value Perceived" row */
+.ai-table tbody tr:nth-child(4) td:last-child { /* Targeting "High" in "Value Perceived" */
+    color: #007bff; /* Example: Blue color for emphasis, adjust as needed */
+}
+
 /* Pricing Button */
 .btn {
     display: inline-block;
@@ -415,11 +530,11 @@ body.sidebar-collapsed .main-content {
     text-decoration: none;
     transition: background-color 0.3s ease;
 }
-  
+
 .btn:hover {
     background-color: #3730a3;
 }
-  
+
 /* profile */
 .chat-header {
     padding: 10px;
@@ -493,4 +608,6 @@ body.sidebar-collapsed .main-content {
     -ms-user-select: none;
     user-select: none;
     cursor: not-allowed; /* Change cursor on hover */
+    white-space: pre-wrap; /* Preserve line breaks */
+    word-break: break-word; /* Prevent long words from breaking layout */
 }
