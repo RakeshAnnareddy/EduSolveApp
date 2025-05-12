@@ -66,7 +66,10 @@ document.addEventListener("DOMContentLoaded", function () {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ prompt: userInput })
+            body: JSON.stringify({ 
+                prompt: userInput,
+                user_id: "test_user_001" 
+            })
         })
         .then(response => response.json())
         .then(data => {
