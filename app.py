@@ -21,7 +21,7 @@ client_zephyr = InferenceClient("HuggingFaceH4/zephyr-7b-beta", token=HF_API_TOK
 # MongoDB Setup
 mongo_uri = os.getenv("MONGODB_URI")
 mongo_client = MongoClient(mongo_uri)
-db = mongo_client["edusolve"]
+db = mongo_client["EduSolve"]
 users_collection = db["users"]
 pdf_collection = db["pdfs"]
 
