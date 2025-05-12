@@ -6,3 +6,4 @@ huggingface-hub
 gunicorn
 pymongo
 datetime
+PyMuPDF

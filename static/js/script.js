@@ -361,3 +361,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+document.getElementById("fileUpload").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    const userId = localStorage.getItem("user_id"); // Make sure user_id is stored
+  
+    if (!file || !userId) {
+      alert("PDF or User ID missing!");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("pdf", file);
+    formData.append("user_id", userId);
+  
+    try {
+      const response = await fetch("https://edusolveapp.onrender.com/upload-pdf", {
+        method: "POST",
+        body: formData,
+      });
+  
+      const data = await response.json();
+  
+      if (data.analysis) {
+        // Display analysis below the PDF or in a sidebar
+        document.getElementById("analysisOutput").innerText = data.analysis;
+      } else {
+        alert("Error analyzing PDF: " + data.error);
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+    }
+  });
+  
