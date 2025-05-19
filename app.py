@@ -130,18 +130,16 @@ def generate_response(prompt, user_id):
     update_usage(user_id)
 
     try:
-        # Use Zephyr for everything (can add GPT-4o later)
-        response = ""
         messages = [{"role": "user", "content": prompt}]
-        for message in client_zephyr.chat_completion(
-            messages, max_tokens=700, temperature=0.7, top_p=0.9, stream=True
-        ):
-            token = message.choices[0].delta.content
-            response += token
+        response = client_zephyr.chat_completion(
+            messages, max_tokens=700, temperature=0.7, top_p=0.9, stream=False
+        )
+        print("HF Response:", response)
+        text = response.choices[0].message.content
 
         suggestions = generate_enhanced_suggestions(prompt, client_zephyr)
 
-        return f"{response}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
+        return f"{text}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
 
     except Exception as e:
         return f"Error: {str(e)}"
