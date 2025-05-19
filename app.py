@@ -1,5 +1,3 @@
-# EduSolve Flask Backend with Zephyr LLM, Plan Management, Token Control, and Topic Analysis
-
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from huggingface_hub import InferenceClient
@@ -25,14 +23,7 @@ db = mongo_client["EduSolve"]
 users_collection = db["users"]
 pdf_collection = db["pdfs"]
 
-# Plan Config
-PLANS = {
-    149: {"max_requests": 30},
-    199: {"max_requests": 50},
-    299: {"max_requests": 75},
-}
-
-# Update usage
+# Update usage - keep this for tracking but no limits - CHANGED
 def update_usage(user_id):
     users_collection.update_one(
         {"user_id": user_id},
@@ -40,7 +31,7 @@ def update_usage(user_id):
         upsert=True
     )
 
-# Generate suggestions and topic analysis
+# Generate suggestions and topic analysis with error handling
 def generate_enhanced_suggestions(prompt, zephyr_client):
     suggestion_prompt = f"""
     You are an AI assistant learning along with a student. Analyze this topic:
@@ -54,18 +45,28 @@ def generate_enhanced_suggestions(prompt, zephyr_client):
 
     messages = [{"role": "user", "content": suggestion_prompt}]
     response = ""
-    for message in zephyr_client.chat_completion(
-        messages, max_tokens=900, temperature=0.7, top_p=0.9, stream=True
-    ):
-        token = message.choices[0].delta.content
-        response += token
+
+    try:
+        for message in zephyr_client.chat_completion(
+            messages, max_tokens=900, temperature=0.7, top_p=0.9, stream=True
+        ):
+            if "choices" in message and len(message.choices) > 0:
+                delta = message.choices[0].delta
+                if delta and hasattr(delta, 'content'):
+                    token = delta.content
+                    response += token
+            if len(response) > 3500:
+                break
+    except Exception as e:
+        response += f"\n[Error during suggestion generation: {str(e)}]"
+
     return response
 
-# PDF Analysis Logic
+# PDF Analysis Logic with error handling
 def analyze_pdf_content(content):
     summary_request = f"""
     You are a smart AI reading this PDF with a student. Here is the content:
-    \""" + content[:4000] + "\""  # Limit input to ~4000 characters
+    \"\"\"{content[:4000]}\"\"\"
 
     Please do the following:
     1. Summarize the content.
@@ -76,11 +77,21 @@ def analyze_pdf_content(content):
 
     messages = [{"role": "user", "content": summary_request}]
     response = ""
-    for message in client_zephyr.chat_completion(
-        messages, max_tokens=950, temperature=0.7, top_p=0.9, stream=True
-    ):
-        token = message.choices[0].delta.content
-        response += token
+
+    try:
+        for message in client_zephyr.chat_completion(
+            messages, max_tokens=950, temperature=0.7, top_p=0.9, stream=True
+        ):
+            if "choices" in message and len(message.choices) > 0:
+                delta = message.choices[0].delta
+                if delta and hasattr(delta, 'content'):
+                    token = delta.content
+                    response += token
+            if len(response) > 3500:
+                break
+    except Exception as e:
+        response += f"\n[Error during PDF analysis: {str(e)}]"
+
     return response
 
 # Upload and Analyze PDF Route
@@ -93,14 +104,11 @@ def upload_pdf():
     user_id = request.form["user_id"]
 
     try:
-        # Read PDF content
         doc = fitz.open(stream=file.read(), filetype="pdf")
         full_text = "\n".join([page.get_text() for page in doc])
 
-        # Analyze
         ai_analysis = analyze_pdf_content(full_text)
 
-        # Store in DB
         pdf_collection.insert_one({
             "user_id": user_id,
             "content": full_text,
@@ -112,7 +120,7 @@ def upload_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Main Response Function
+# Main Response Function - no usage limit check, only usage tracking
 def generate_response(prompt, user_id):
     lower_prompt = prompt.lower().strip()
     predefined_responses = {
@@ -127,15 +135,14 @@ def generate_response(prompt, user_id):
     if lower_prompt in predefined_responses:
         return predefined_responses[lower_prompt]
 
-    update_usage(user_id)
+    update_usage(user_id)  # keep tracking usage but no limit
 
     try:
         messages = [{"role": "user", "content": prompt}]
-        response = client_zephyr.chat_completion(
+        response_obj = client_zephyr.chat_completion(
             messages, max_tokens=700, temperature=0.7, top_p=0.9, stream=False
         )
-        print("HF Response:", response)
-        text = response.choices[0].message.content
+        text = response_obj.choices[0].message.content
 
         suggestions = generate_enhanced_suggestions(prompt, client_zephyr)
 
