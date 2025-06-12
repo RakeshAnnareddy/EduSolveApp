@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from huggingface_hub import InferenceClient
+import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -12,9 +12,10 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Hugging Face Token & Clients
-HF_API_TOKEN = os.getenv("HFE_API_TOKEN")
-client_zephyr = InferenceClient("HuggingFaceH4/zephyr-7b-beta", token=HF_API_TOKEN)
+# Gemini API Configuration
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+genai.configure(api_key=GEMINI_API_KEY)
+gemini_model = genai.GenerativeModel("gemini-pro")
 
 # MongoDB Setup
 mongo_uri = os.getenv("MONGODB_URI")
@@ -23,7 +24,7 @@ db = mongo_client["EduSolve"]
 users_collection = db["users"]
 pdf_collection = db["pdfs"]
 
-# Update usage - keep this for tracking but no limits - CHANGED
+# Track user usage
 def update_usage(user_id):
     users_collection.update_one(
         {"user_id": user_id},
@@ -31,8 +32,8 @@ def update_usage(user_id):
         upsert=True
     )
 
-# Generate suggestions and topic analysis with error handling
-def generate_enhanced_suggestions(prompt, zephyr_client):
+# Generate suggestions
+def generate_enhanced_suggestions(prompt):
     suggestion_prompt = f"""
     You are an AI assistant learning along with a student. Analyze this topic:
     \"{prompt}\"
@@ -41,30 +42,18 @@ def generate_enhanced_suggestions(prompt, zephyr_client):
     2. Suggest 2-3 AI prompts students can try related to this topic.
     3. Compare this topic with a real-world application or use case.
     4. Mention if this is a very important concept and why.
+    5. Prioritize the topic's importance compared to others in the document.
     """
 
-    messages = [{"role": "user", "content": suggestion_prompt}]
-    response = ""
-
     try:
-        for message in zephyr_client.chat_completion(
-            messages, max_tokens=900, temperature=0.7, top_p=0.9, stream=True
-        ):
-            if "choices" in message and len(message.choices) > 0:
-                delta = message.choices[0].delta
-                if delta and hasattr(delta, 'content'):
-                    token = delta.content
-                    response += token
-            if len(response) > 3500:
-                break
+        response = gemini_model.generate_content(suggestion_prompt)
+        return response.text.strip()
     except Exception as e:
-        response += f"\n[Error during suggestion generation: {str(e)}]"
+        return f"[Error during suggestion generation: {str(e)}]"
 
-    return response
-
-# PDF Analysis Logic with error handling
+# Analyze PDF content
 def analyze_pdf_content(content):
-    summary_request = f"""
+    prompt = f"""
     You are a smart AI reading this PDF with a student. Here is the content:
     \"\"\"{content[:4000]}\"\"\"
 
@@ -73,28 +62,16 @@ def analyze_pdf_content(content):
     2. Highlight key topics and concepts.
     3. Suggest real-world applications.
     4. Provide 2-3 learning prompts for this PDF.
+    5. Prioritize the key topics by real-world practicality.
     """
 
-    messages = [{"role": "user", "content": summary_request}]
-    response = ""
-
     try:
-        for message in client_zephyr.chat_completion(
-            messages, max_tokens=950, temperature=0.7, top_p=0.9, stream=True
-        ):
-            if "choices" in message and len(message.choices) > 0:
-                delta = message.choices[0].delta
-                if delta and hasattr(delta, 'content'):
-                    token = delta.content
-                    response += token
-            if len(response) > 3500:
-                break
+        response = gemini_model.generate_content(prompt)
+        return response.text.strip()
     except Exception as e:
-        response += f"\n[Error during PDF analysis: {str(e)}]"
+        return f"[Error during PDF analysis: {str(e)}]"
 
-    return response
-
-# Upload and Analyze PDF Route
+# Upload and analyze PDF
 @app.route("/upload-pdf", methods=["POST"])
 def upload_pdf():
     if "pdf" not in request.files or "user_id" not in request.form:
@@ -120,7 +97,7 @@ def upload_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Main Response Function - no usage limit check, only usage tracking
+# Chat + suggestion generator
 def generate_response(prompt, user_id):
     lower_prompt = prompt.lower().strip()
     predefined_responses = {
@@ -135,21 +112,14 @@ def generate_response(prompt, user_id):
     if lower_prompt in predefined_responses:
         return predefined_responses[lower_prompt]
 
-    update_usage(user_id)  # keep tracking usage but no limit
+    update_usage(user_id)
 
     try:
-        messages = [{"role": "user", "content": prompt}]
-        response_obj = client_zephyr.chat_completion(
-            messages, max_tokens=700, temperature=0.7, top_p=0.9, stream=False
-        )
-        text = response_obj.choices[0].message.content
-
-        suggestions = generate_enhanced_suggestions(prompt, client_zephyr)
-
-        return f"{text}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
-
+        response = gemini_model.generate_content(prompt)
+        suggestions = generate_enhanced_suggestions(prompt)
+        return f"{response.text.strip()}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
     except Exception as e:
-        return f"Error: {str(e)}"
+        return f"[Error during chat generation: {str(e)}]"
 
 @app.route("/generate", methods=["POST"])
 def chat():
