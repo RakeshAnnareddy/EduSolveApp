@@ -611,3 +611,43 @@ body.sidebar-collapsed .main-content {
     white-space: pre-wrap; /* Preserve line breaks */
     word-break: break-word; /* Prevent long words from breaking layout */
 }
+
+/* sidebar toggle button */
+.sidebar {
+    width: 240px;
+    transition: all 0.3s ease;
+    background-color: #f5f5f5;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.sidebar.collapsed {
+    width: 60px;
+}
+
+.sidebar .sidebar-item span,
+.sidebar-header span,
+.sidebar-footer span {
+    display: inline;
+    transition: opacity 0.3s ease;
+}
+
+.sidebar.collapsed .sidebar-item span,
+.sidebar.collapsed .sidebar-header span,
+.sidebar.collapsed .sidebar-footer span {
+    display: none;
+}
+
+.main-content {
+    margin-left: 240px;
+    transition: all 0.3s ease;
+    padding: 20px;
+}
+
+.main-content.collapsed {
+    margin-left: 60px;
+}

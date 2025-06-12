@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const fileNameDisplay = document.getElementById('file-name');
     const cancelUploadButton = document.getElementById('cancelUpload');
     const initialUploadArea = document.getElementById('initial-upload-area');
+   ;
 
     function scrollToBottom() {
         chatBox.scrollTop = chatBox.scrollHeight;
@@ -397,3 +398,13 @@ document.getElementById("fileUpload").addEventListener("change", async (e) => {
     }
   });
   
+  document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.getElementById("sidebar");
+    const mainContent = document.getElementById("main-content");
+    const menuToggle = document.getElementById("menu-toggle");
+
+    menuToggle.addEventListener("click", () => {
+        sidebar.classList.toggle("collapsed");
+        mainContent.classList.toggle("collapsed");
+    });
+});

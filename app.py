@@ -23,6 +23,8 @@ mongo_client = MongoClient(mongo_uri)
 db = mongo_client["EduSolve"]
 users_collection = db["users"]
 pdf_collection = db["pdfs"]
+chats_collection = db["chats"]
+
 
 # Track user usage
 def update_usage(user_id):
@@ -97,7 +99,7 @@ def upload_pdf():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# Chat + suggestion generator
+
 def generate_response(prompt, user_id):
     lower_prompt = prompt.lower().strip()
     predefined_responses = {
@@ -110,16 +112,35 @@ def generate_response(prompt, user_id):
     }
 
     if lower_prompt in predefined_responses:
-        return predefined_responses[lower_prompt]
+        response_text = predefined_responses[lower_prompt]
+        chats_collection.insert_one({
+            "user_id": user_id,
+            "prompt": prompt,
+            "response": response_text,
+            "timestamp": datetime.datetime.utcnow()
+        })
+        return response_text
 
     update_usage(user_id)
 
     try:
         response = gemini_model.generate_content(prompt)
         suggestions = generate_enhanced_suggestions(prompt)
-        return f"{response.text.strip()}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
+        final_response = f"{response.text.strip()}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
+
+        # Save chat to DB
+        chats_collection.insert_one({
+            "user_id": user_id,
+            "prompt": prompt,
+            "response": final_response,
+            "timestamp": datetime.datetime.utcnow()
+        })
+
+        return final_response
+
     except Exception as e:
         return f"[Error during chat generation: {str(e)}]"
+
 
 @app.route("/generate", methods=["POST"])
 def chat():
