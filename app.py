@@ -17,7 +17,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.secret_key = '@uthentic@teUser$'
+app.secret_key = 'EdU&olv3@990'
 FIREBASE_API_KEY = ''
 
 cred = credentials.Certificate('firebase-adminsdk.json')
