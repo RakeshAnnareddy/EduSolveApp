@@ -13,9 +13,9 @@ app = Flask(__name__)
 CORS(app)
 
 # Gemini API Configuration
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-pro")
+gemini_model = genai.GenerativeModel("gemini-2.0-flash")
 
 # MongoDB Setup
 mongo_uri = os.getenv("MONGODB_URI")
