@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import datetime
 import fitz  # PyMuPDF
+from collections import defaultdict
+import json
 
 
 
@@ -28,6 +30,7 @@ db = mongo_client["EduSolve"]
 users_collection = db["users"]
 pdf_collection = db["pdfs"]
 chats_collection = db["chats"]
+content_collection = db["structured_content"]
 
 
 # Track user usage
@@ -77,6 +80,91 @@ def analyze_pdf_content(content):
     except Exception as e:
         return f"[Error during PDF analysis: {str(e)}]"
 
+class PDFContentAnalyzer:
+    def __init__(self):
+        self.content_structure = {
+            "main_topics": [],
+            "subtopics": defaultdict(list),
+            "key_concepts": defaultdict(list),
+            "real_world_applications": defaultdict(list),
+            "examples": defaultdict(list),
+            "definitions": defaultdict(dict),
+            "relationships": defaultdict(list)
+        }
+
+    def analyze_content(self, content):
+        # Analyze main topics
+        main_topics_prompt = f"""
+        Analyze this content and identify the main topics:
+        {content[:4000]}
+        
+        Return the main topics as a JSON array.
+        """
+        
+        try:
+            main_topics_response = gemini_model.generate_content(main_topics_prompt)
+            self.content_structure["main_topics"] = json.loads(main_topics_response.text)
+            
+            # Analyze each main topic
+            for topic in self.content_structure["main_topics"]:
+                self._analyze_topic(topic, content)
+                
+            return self.content_structure
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _analyze_topic(self, topic, content):
+        # Analyze subtopics
+        subtopics_prompt = f"""
+        For the topic "{topic}", identify:
+        1. Subtopics
+        2. Key concepts
+        3. Real-world applications
+        4. Examples
+        5. Definitions
+        6. Relationships with other topics
+        
+        Content: {content[:4000]}
+        
+        Return as JSON with these keys: subtopics, concepts, applications, examples, definitions, relationships
+        """
+        
+        try:
+            analysis_response = gemini_model.generate_content(subtopics_prompt)
+            analysis = json.loads(analysis_response.text)
+            
+            self.content_structure["subtopics"][topic] = analysis.get("subtopics", [])
+            self.content_structure["key_concepts"][topic] = analysis.get("concepts", [])
+            self.content_structure["real_world_applications"][topic] = analysis.get("applications", [])
+            self.content_structure["examples"][topic] = analysis.get("examples", [])
+            self.content_structure["definitions"][topic] = analysis.get("definitions", {})
+            self.content_structure["relationships"][topic] = analysis.get("relationships", [])
+            
+        except Exception as e:
+            print(f"Error analyzing topic {topic}: {str(e)}")
+
+def generate_real_world_suggestions(topic, content_structure):
+    prompt = f"""
+    Based on this topic: {topic}
+    
+    And its structured content:
+    {json.dumps(content_structure, indent=2)}
+    
+    Generate:
+    1. 3 real-world problems that can be solved using this knowledge
+    2. 2 practical applications in industry
+    3. 1 case study suggestion
+    4. 2 hands-on project ideas
+    
+    Format the response as JSON with these keys: problems, applications, case_study, projects
+    """
+    
+    try:
+        response = gemini_model.generate_content(prompt)
+        return json.loads(response.text)
+    except Exception as e:
+        return {"error": str(e)}
+
 # Upload and analyze PDF
 @app.route("/upload-pdf", methods=["POST"])
 def upload_pdf():
@@ -87,22 +175,60 @@ def upload_pdf():
     user_id = request.form["user_id"]
 
     try:
+        # Read PDF content
         doc = fitz.open(stream=file.read(), filetype="pdf")
         full_text = "\n".join([page.get_text() for page in doc])
 
-        ai_analysis = analyze_pdf_content(full_text)
+        # Analyze content using the new analyzer
+        analyzer = PDFContentAnalyzer()
+        structured_content = analyzer.analyze_content(full_text)
 
-        pdf_collection.insert_one({
+        # Store in MongoDB
+        pdf_doc = {
             "user_id": user_id,
             "content": full_text,
-            "analysis": ai_analysis,
+            "structured_content": structured_content,
             "timestamp": datetime.datetime.utcnow()
+        }
+        
+        pdf_id = pdf_collection.insert_one(pdf_doc).inserted_id
+        
+        # Generate real-world suggestions for each main topic
+        suggestions = {}
+        for topic in structured_content["main_topics"]:
+            suggestions[topic] = generate_real_world_suggestions(topic, structured_content)
+
+        return jsonify({
+            "pdf_id": str(pdf_id),
+            "structured_content": structured_content,
+            "real_world_suggestions": suggestions
         })
 
-        return jsonify({"analysis": ai_analysis})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+# Get real-world suggestions for a specific topic
+@app.route("/get-suggestions", methods=["POST"])
+def get_suggestions():
+    data = request.get_json()
+    topic = data.get("topic")
+    pdf_id = data.get("pdf_id")
+
+    if not topic or not pdf_id:
+        return jsonify({"error": "Topic and PDF ID are required"}), 400
+
+    try:
+        pdf_doc = pdf_collection.find_one({"_id": pdf_id})
+        if not pdf_doc:
+            return jsonify({"error": "PDF not found"}), 404
+
+        structured_content = pdf_doc.get("structured_content", {})
+        suggestions = generate_real_world_suggestions(topic, structured_content)
+        
+        return jsonify({"suggestions": suggestions})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 def generate_response(prompt, user_id):
     lower_prompt = prompt.lower().strip()

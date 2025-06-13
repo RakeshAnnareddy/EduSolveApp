@@ -245,90 +245,153 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    let currentPdfId = null; // Store the current PDF ID
+
     fileUpload.addEventListener('change', function() {
         if (this.files.length > 0) {
             const file = this.files[0];
-
-            fileNameDisplay.textContent = `Selected file: ${file.name}`;
+            fileNameDisplay.textContent = file.name;
             fileNameDisplay.style.display = 'block';
-            cancelUploadButton.style.display = 'inline-block';
-            readerContent.innerHTML = '';
-            readerContent.style.display = 'block';
-            initialUploadArea.remove(); // Remove initial upload area
+            cancelUploadButton.style.display = 'block';
+            
+            // Enable the summarize and explain buttons
+            summarizeButton.disabled = false;
+            explainButton.disabled = false;
+            
+            // Upload and analyze the PDF
+            const formData = new FormData();
+            formData.append('pdf', file);
+            formData.append('user_id', 'test_user_001');
 
-            const fileType = file.type;
-            if (fileType === 'application/pdf') {
-                const embed = document.createElement('embed');
-                embed.src = URL.createObjectURL(file);
-                embed.type = 'application/pdf';
-                embed.style.width = '100%'; // Make it fill the container
-                embed.style.height = '100%';
-                readerContent.appendChild(embed);
-            } else if (fileType.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.maxWidth = '100%'; // Responsive image
-                    img.style.maxHeight = '100%';
-                    readerContent.appendChild(img);
+            fetch('https://edusolveapp.onrender.com/upload-pdf', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
                 }
-                reader.readAsDataURL(file);
-            } else {
-                readerContent.textContent = `Unsupported file type: ${fileType}. Please upload an image or PDF.`;
-            }
-        } else {
-            // No file selected, you might want to handle this (e.g., show the upload area again)
-            readerContent.innerHTML = '';
-            readerContent.style.display = 'flex';
-            readerContent.appendChild(initialUploadArea);
-            fileNameDisplay.style.display = 'none';
-            cancelUploadButton.style.display = 'none';
+                currentPdfId = data.pdf_id;
+                
+                // Display initial analysis
+                const botMessage = document.createElement('div');
+                botMessage.classList.add('bot-message');
+                botMessage.innerHTML = '<h3>PDF Analysis Complete!</h3>' +
+                    '<p>Click "Summarize" to get a concise summary or "Explain" to get detailed explanations with real-world examples.</p>';
+                chatBox.appendChild(botMessage);
+                scrollToBottom();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                chatBox.innerHTML += `<div class="bot-message">Error analyzing PDF. Please try again later.</div>`;
+                scrollToBottom();
+            });
         }
     });
 
-    // Event listeners for Explain and Summarize buttons
-    if (explainButton) {
-        explainButton.addEventListener('click', function() {
-            const selectedText = window.getSelection().toString().trim();
-            const currentInput = searchInput.value.trim();
-            let prompt = "";
-            if (selectedText) {
-                prompt = `Explain this: "${selectedText}"`;
-            } else if (currentInput) {
-                prompt = `Explain this: "${currentInput}"`;
-            } else if (readerContent.textContent && readerContent.textContent !== "Drag and drop a file here or click to upload") {
-                prompt = `Explain this content: "${readerContent.textContent}"`;
-            }
-             else {
-                alert("Please select text, enter something in the chat input, or upload a file to explain.");
-                return;
-            }
-            searchInput.value = prompt;
-            sendMessage(); // Or create a specific 'explain' function
-        });
-    }
+    // Add event listener for summarize button
+    summarizeButton.addEventListener('click', function() {
+        if (!currentPdfId) {
+            alert('Please upload a PDF first!');
+            return;
+        }
 
-    if (summarizeButton) {
-        summarizeButton.addEventListener('click', function() {
-            const selectedText = window.getSelection().toString().trim();
-            const currentInput = searchInput.value.trim();
-            let prompt = "";
-            if (selectedText) {
-                prompt = `Summarize this: "${selectedText}"`;
-            } else if (currentInput) {
-                prompt = `Summarize this: "${currentInput}"`;
-            } else if (readerContent.textContent && readerContent.textContent !== "Drag and drop a file here or click to upload") {
-                prompt = `Summarize this content: "${readerContent.textContent}"`;
+        const botMessage = document.createElement('div');
+        botMessage.classList.add('bot-message');
+        botMessage.innerHTML = '<h3>Generating Summary...</h3>';
+        chatBox.appendChild(botMessage);
+        scrollToBottom();
+
+        // Get the structured content and generate summary
+        fetch('https://edusolveapp.onrender.com/get-suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pdf_id: currentPdfId,
+                topic: 'summary'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
             }
-             else {
-                alert("Please select text, enter something in the chat input, or upload a file to summarize.");
-                return;
-            }
-            searchInput.value = prompt;
-            sendMessage(); // Or create a specific 'summarize' function
+
+            const summaryMessage = document.createElement('div');
+            summaryMessage.classList.add('bot-message');
+            summaryMessage.innerHTML = formatBotResponse(data.suggestions.summary || 'Summary not available');
+            chatBox.appendChild(summaryMessage);
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            chatBox.innerHTML += `<div class="bot-message">Error generating summary. Please try again later.</div>`;
+            scrollToBottom();
         });
-    }
+    });
+
+    // Add event listener for explain button
+    explainButton.addEventListener('click', function() {
+        if (!currentPdfId) {
+            alert('Please upload a PDF first!');
+            return;
+        }
+
+        const botMessage = document.createElement('div');
+        botMessage.classList.add('bot-message');
+        botMessage.innerHTML = '<h3>Generating Detailed Explanation...</h3>';
+        chatBox.appendChild(botMessage);
+        scrollToBottom();
+
+        // Get the structured content and generate explanation
+        fetch('https://edusolveapp.onrender.com/get-suggestions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                pdf_id: currentPdfId,
+                topic: 'explanation',
+                level: 'high_school' // Specify the explanation level
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            const explanationMessage = document.createElement('div');
+            explanationMessage.classList.add('bot-message');
+            
+            // Format the explanation with sections
+            let formattedExplanation = '<h3>Detailed Explanation</h3>';
+            
+            if (data.suggestions.concepts) {
+                formattedExplanation += '<h4>Key Concepts</h4>' + formatBotResponse(data.suggestions.concepts);
+            }
+            
+            if (data.suggestions.examples) {
+                formattedExplanation += '<h4>Real-World Examples</h4>' + formatBotResponse(data.suggestions.examples);
+            }
+            
+            if (data.suggestions.applications) {
+                formattedExplanation += '<h4>Practical Applications</h4>' + formatBotResponse(data.suggestions.applications);
+            }
+            
+            explanationMessage.innerHTML = formattedExplanation;
+            chatBox.appendChild(explanationMessage);
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error("Error:", error);
+            chatBox.innerHTML += `<div class="bot-message">Error generating explanation. Please try again later.</div>`;
+            scrollToBottom();
+        });
+    });
 });
 
 
