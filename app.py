@@ -6,10 +6,7 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 import datetime
 import fitz  # PyMuPDF
-import firebase_admin
-from firebase_admin import credentials, auth
-import requests
-from flask import Flask, render_template, request, redirect, session, flash
+
 
 
 load_dotenv()
@@ -17,95 +14,7 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-app.secret_key = 'EdU&olv3@990'
-FIREBASE_API_KEY = ''
 
-cred = credentials.Certificate('firebase-adminsdk.json')
-firebase_admin.initialize_app(cred)
-
-@app.route('/')
-def home():
-    if 'user' in session:
-        return render_template('index.html')
-    return redirect('/login')
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        try:
-            user = auth.create_user(
-                email=email,
-                password=password,
-                display_name=name
-            )
-            session['user'] = email
-            session['name'] = name
-            return redirect('/')
-        except Exception as e:
-            return f"Signup Error: {e}"
-    return render_template('signup.html')
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        # Firebase REST API for sign-in
-        url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-        payload = {
-            "email": email,
-            "password": password,
-            "returnSecureToken": True
-        }
-
-        response = requests.post(url, json=payload)
-        data = response.json()
-
-        if 'idToken' in data:
-            session['user'] = email  # Store email in session
-            try:
-                user = auth.get_user_by_email(email)  # Get user data from Firebase
-                if user.display_name:
-                    session['name'] = user.display_name  # Set display name if available
-                else:
-                    session['name'] = email  # Fall back to email if display name isn't set
-            except Exception as e:
-                flash(f"Error fetching user data: {str(e)}")
-                session['name'] = email  # Fallback to email
-            print(f"User logged in: {session['name']}")  # Debugging print statement
-            return redirect('/')
-        else:
-            error = data.get('error', {}).get('message', 'Login failed')
-            flash(f"Login error: {error}")
-            return render_template('login.html', error=error)
-
-    return render_template('login.html')
-
-
-@app.route('/change-password', methods=['GET', 'POST'])
-def change_password():
-    if request.method == 'POST':
-        email = request.form['email']
-        new_password = request.form['new_password']
-        try:
-            user = auth.get_user_by_email(email)
-            auth.update_user(user.uid, password=new_password)
-            return render_template('change_password.html', message="Password updated successfully!")
-        except Exception as e:
-            return render_template('change_password.html', message=f"Error: {e}")
-    return render_template('change_password.html')
-
-
-@app.route('/logout')
-def logout():
-    session.pop('user', None)
-    session.clear()
-    return redirect('/login')
 
 # Gemini API Configuration
 GEMINI_API_KEY = os.getenv("GOOGLE_API_KEY")
