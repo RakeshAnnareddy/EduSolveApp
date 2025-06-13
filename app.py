@@ -230,58 +230,116 @@ def get_suggestions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-def generate_response(prompt, user_id):
-    lower_prompt = prompt.lower().strip()
-    predefined_responses = {
-        "hi": "Hello! How can I assist you today?",
-        "hello": "Hi there! What do you need help with?",
-        "how are you": "I'm an AI assistant, but I'm here to help!",
-        "what is your name": "I'm your AI assistant, here to help you with anything!",
-        "i love you": "That's great but I don't have feelings!",
-        "bye": "Goodbye! Have a great day!",
-    }
+def generate_focused_response(prompt, user_id, focused_response=True):
+    try:
+        # Check if it's a predefined response
+        lower_prompt = prompt.lower().strip()
+        predefined_responses = {
+            "hi": "Hello! How can I assist you today?",
+            "hello": "Hi there! What do you need help with?",
+            "how are you": "I'm an AI assistant, but I'm here to help!",
+            "what is your name": "I'm your AI assistant, here to help you with anything!",
+            "bye": "Goodbye! Have a great day!",
+        }
 
-    if lower_prompt in predefined_responses:
-        response_text = predefined_responses[lower_prompt]
+        if lower_prompt in predefined_responses:
+            response_text = predefined_responses[lower_prompt]
+            chats_collection.insert_one({
+                "user_id": user_id,
+                "prompt": prompt,
+                "response": response_text,
+                "timestamp": datetime.datetime.utcnow()
+            })
+            return response_text
+
+        # Update usage
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$inc": {"usage": 1}, "$set": {"last_used": datetime.datetime.utcnow()}},
+            upsert=True
+        )
+
+        # Generate focused response
+        response = gemini_model.generate_content(prompt)
+        response_text = response.text.strip()
+
+        # Save chat to DB
         chats_collection.insert_one({
             "user_id": user_id,
             "prompt": prompt,
             "response": response_text,
             "timestamp": datetime.datetime.utcnow()
         })
+
         return response_text
 
-    update_usage(user_id)
+    except Exception as e:
+        return f"[Error during response generation: {str(e)}]"
 
+def generate_summary(pdf_id, focused_response=True):
     try:
-        response = gemini_model.generate_content(prompt)
-        suggestions = generate_enhanced_suggestions(prompt)
-        final_response = f"{response.text.strip()}\n\n---\n\nAI Study Partner Suggestions:\n{suggestions}"
+        pdf_doc = pdf_collection.find_one({"_id": pdf_id})
+        if not pdf_doc:
+            return {"error": "PDF not found"}
 
-        # Save chat to DB
-        chats_collection.insert_one({
-            "user_id": user_id,
-            "prompt": prompt,
-            "response": final_response,
-            "timestamp": datetime.datetime.utcnow()
-        })
-
-        return final_response
+        content = pdf_doc.get("content", "")
+        summary_prompt = f"""
+        Provide a concise summary of this content:
+        {content[:4000]}
+        
+        Focus only on the main points and key information.
+        """
+        
+        response = gemini_model.generate_content(summary_prompt)
+        return {"summary": response.text.strip()}
 
     except Exception as e:
-        return f"[Error during chat generation: {str(e)}]"
+        return {"error": str(e)}
 
+def generate_explanation(pdf_id, topic=None, level="high_school", focused_response=True):
+    try:
+        pdf_doc = pdf_collection.find_one({"_id": pdf_id})
+        if not pdf_doc:
+            return {"error": "PDF not found"}
+
+        content = pdf_doc.get("content", "")
+        structured_content = pdf_doc.get("structured_content", {})
+
+        if topic:
+            # Get specific topic content
+            topic_content = structured_content.get("key_concepts", {}).get(topic, "")
+            explanation_prompt = f"""
+            Explain this topic in simple terms suitable for {level} students:
+            {topic_content}
+            
+            Focus on clear, straightforward explanation without additional suggestions.
+            """
+        else:
+            # General explanation of the content
+            explanation_prompt = f"""
+            Explain this content in simple terms suitable for {level} students:
+            {content[:4000]}
+            
+            Focus on clear, straightforward explanation without additional suggestions.
+            """
+
+        response = gemini_model.generate_content(explanation_prompt)
+        return {"explanation": response.text.strip()}
+
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.route("/generate", methods=["POST"])
 def chat():
     data = request.get_json()
     prompt = data.get("prompt")
     user_id = data.get("user_id")
+    focused_response = data.get("focused_response", True)
 
     if not prompt or not user_id:
         return jsonify({"error": "Prompt and user_id are required"}), 400
 
-    response = generate_response(prompt, user_id)
+    response = generate_focused_response(prompt, user_id, focused_response)
     return jsonify({"response": response})
 
 if __name__ == "__main__":

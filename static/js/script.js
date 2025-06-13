@@ -55,12 +55,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const userMessage = document.createElement('div');
         userMessage.classList.add('user-message');
-        userMessage.innerHTML = userInput.replace(/\n/g, '<br>'); // Use innerHTML to render <br> as a line break
+        userMessage.innerHTML = userInput.replace(/\n/g, '<br>');
         chatBox.appendChild(userMessage);
 
         searchInput.value = "";
-        searchInput.rows = 1; // Reset rows
+        searchInput.rows = 1;
         resetActionButton();
+
+        // Add loading state
+        const loadingMessage = document.createElement('div');
+        loadingMessage.classList.add('bot-message');
+        loadingMessage.innerHTML = '<div class="loading">Generating response...</div>';
+        chatBox.appendChild(loadingMessage);
+        scrollToBottom();
 
         fetch("https://edusolveapp.onrender.com/generate", {
             method: "POST",
@@ -69,11 +76,15 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({ 
                 prompt: userInput,
-                user_id: "test_user_001" 
+                user_id: "test_user_001",
+                focused_response: true // New parameter to indicate focused response
             })
         })
         .then(response => response.json())
         .then(data => {
+            // Remove loading message
+            loadingMessage.remove();
+            
             let botResponse = data.response;
             let formattedResponse = formatBotResponse(botResponse);
 
@@ -85,6 +96,9 @@ document.addEventListener("DOMContentLoaded", function () {
             scrollToBottom();
         })
         .catch(error => {
+            // Remove loading message
+            loadingMessage.remove();
+            
             console.error("Error:", error);
             chatBox.innerHTML += `<div class="bot-message">Error generating response. Please try again later.</div>`;
             scrollToBottom();
@@ -290,20 +304,19 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Add event listener for summarize button
+    // Modify summarize button handler
     summarizeButton.addEventListener('click', function() {
         if (!currentPdfId) {
             alert('Please upload a PDF first!');
             return;
         }
 
-        const botMessage = document.createElement('div');
-        botMessage.classList.add('bot-message');
-        botMessage.innerHTML = '<h3>Generating Summary...</h3>';
-        chatBox.appendChild(botMessage);
+        const loadingMessage = document.createElement('div');
+        loadingMessage.classList.add('bot-message');
+        loadingMessage.innerHTML = '<div class="loading">Generating summary...</div>';
+        chatBox.appendChild(loadingMessage);
         scrollToBottom();
 
-        // Get the structured content and generate summary
         fetch('https://edusolveapp.onrender.com/get-suggestions', {
             method: 'POST',
             headers: {
@@ -311,11 +324,14 @@ document.addEventListener("DOMContentLoaded", function () {
             },
             body: JSON.stringify({
                 pdf_id: currentPdfId,
-                topic: 'summary'
+                topic: 'summary',
+                focused_response: true
             })
         })
         .then(response => response.json())
         .then(data => {
+            loadingMessage.remove();
+            
             if (data.error) {
                 throw new Error(data.error);
             }
@@ -327,26 +343,26 @@ document.addEventListener("DOMContentLoaded", function () {
             scrollToBottom();
         })
         .catch(error => {
+            loadingMessage.remove();
             console.error("Error:", error);
             chatBox.innerHTML += `<div class="bot-message">Error generating summary. Please try again later.</div>`;
             scrollToBottom();
         });
     });
 
-    // Add event listener for explain button
+    // Modify explain button handler
     explainButton.addEventListener('click', function() {
         if (!currentPdfId) {
             alert('Please upload a PDF first!');
             return;
         }
 
-        const botMessage = document.createElement('div');
-        botMessage.classList.add('bot-message');
-        botMessage.innerHTML = '<h3>Generating Detailed Explanation...</h3>';
-        chatBox.appendChild(botMessage);
+        const loadingMessage = document.createElement('div');
+        loadingMessage.classList.add('bot-message');
+        loadingMessage.innerHTML = '<div class="loading">Generating explanation...</div>';
+        chatBox.appendChild(loadingMessage);
         scrollToBottom();
 
-        // Get the structured content and generate explanation
         fetch('https://edusolveapp.onrender.com/get-suggestions', {
             method: 'POST',
             headers: {
@@ -355,11 +371,14 @@ document.addEventListener("DOMContentLoaded", function () {
             body: JSON.stringify({
                 pdf_id: currentPdfId,
                 topic: 'explanation',
-                level: 'high_school' // Specify the explanation level
+                level: 'high_school',
+                focused_response: true
             })
         })
         .then(response => response.json())
         .then(data => {
+            loadingMessage.remove();
+            
             if (data.error) {
                 throw new Error(data.error);
             }
@@ -367,31 +386,47 @@ document.addEventListener("DOMContentLoaded", function () {
             const explanationMessage = document.createElement('div');
             explanationMessage.classList.add('bot-message');
             
-            // Format the explanation with sections
-            let formattedExplanation = '<h3>Detailed Explanation</h3>';
+            // Only include the requested explanation without additional suggestions
+            let formattedExplanation = '';
             
-            if (data.suggestions.concepts) {
-                formattedExplanation += '<h4>Key Concepts</h4>' + formatBotResponse(data.suggestions.concepts);
+            if (data.suggestions.explanation) {
+                formattedExplanation = formatBotResponse(data.suggestions.explanation);
+            } else if (data.suggestions.concepts) {
+                formattedExplanation = formatBotResponse(data.suggestions.concepts);
             }
             
-            if (data.suggestions.examples) {
-                formattedExplanation += '<h4>Real-World Examples</h4>' + formatBotResponse(data.suggestions.examples);
-            }
-            
-            if (data.suggestions.applications) {
-                formattedExplanation += '<h4>Practical Applications</h4>' + formatBotResponse(data.suggestions.applications);
-            }
-            
-            explanationMessage.innerHTML = formattedExplanation;
+            explanationMessage.innerHTML = formattedExplanation || 'Explanation not available';
             chatBox.appendChild(explanationMessage);
             scrollToBottom();
         })
         .catch(error => {
+            loadingMessage.remove();
             console.error("Error:", error);
             chatBox.innerHTML += `<div class="bot-message">Error generating explanation. Please try again later.</div>`;
             scrollToBottom();
         });
     });
+
+    // Add loading animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        .loading {
+            display: inline-block;
+            padding: 10px;
+            color: #666;
+        }
+        .loading:after {
+            content: '...';
+            animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60% { content: '...'; }
+            80%, 100% { content: ''; }
+        }
+    `;
+    document.head.appendChild(style);
 });
 
 
