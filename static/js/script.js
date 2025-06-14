@@ -260,7 +260,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     let currentPdfId = null; // Store the current PDF ID
-    let currentPdfUrl = null; // Store the current PDF URL
 
     fileUpload.addEventListener('change', function() {
         if (this.files.length > 0) {
@@ -273,7 +272,7 @@ document.addEventListener("DOMContentLoaded", function () {
             summarizeButton.disabled = false;
             explainButton.disabled = false;
 
-            // Create PDF viewer
+            // Create PDF viewer container
             const pdfViewer = document.createElement('div');
             pdfViewer.id = 'pdf-viewer';
             pdfViewer.style.width = '100%';
@@ -283,45 +282,22 @@ document.addEventListener("DOMContentLoaded", function () {
             pdfViewer.style.borderRadius = '4px';
             pdfViewer.style.overflow = 'hidden';
 
-            // Create PDF.js viewer
-            const viewerContainer = document.createElement('div');
-            viewerContainer.id = 'viewerContainer';
-            viewerContainer.style.width = '100%';
-            viewerContainer.style.height = '100%';
-            viewerContainer.style.overflow = 'auto';
-            pdfViewer.appendChild(viewerContainer);
+            // Create iframe for PDF viewer
+            const viewerFrame = document.createElement('iframe');
+            viewerFrame.id = 'pdf-iframe';
+            viewerFrame.style.width = '100%';
+            viewerFrame.style.height = '100%';
+            viewerFrame.style.border = 'none';
+            pdfViewer.appendChild(viewerFrame);
 
             // Clear previous content and add new viewer
             readerContent.innerHTML = '';
             readerContent.style.display = 'block';
             readerContent.appendChild(pdfViewer);
 
-            // Load PDF.js
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-            script.onload = function() {
-                // Initialize PDF.js
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                
-                // Load the PDF
-                const fileReader = new FileReader();
-                fileReader.onload = function() {
-                    const typedarray = new Uint8Array(this.result);
-                    
-                    pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
-                        // Store PDF URL for later use
-                        currentPdfUrl = URL.createObjectURL(file);
-                        
-                        // Render first page
-                        renderPage(pdf, 1);
-                        
-                        // Add page navigation
-                        addPageNavigation(pdf);
-                    });
-                };
-                fileReader.readAsArrayBuffer(file);
-            };
-            document.head.appendChild(script);
+            // Create object URL for the PDF and set it as the iframe's src
+            const pdfUrl = URL.createObjectURL(file);
+            viewerFrame.src = pdfUrl;
             
             // Upload and analyze the PDF
             const formData = new FormData();
@@ -355,91 +331,6 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-    // Function to render a specific page
-    function renderPage(pdf, pageNumber) {
-        pdf.getPage(pageNumber).then(function(page) {
-            const viewerContainer = document.getElementById('viewerContainer');
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            
-            // Set canvas dimensions
-            const viewport = page.getViewport({ scale: 1.5 });
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            
-            // Clear previous content
-            viewerContainer.innerHTML = '';
-            viewerContainer.appendChild(canvas);
-            
-            // Render PDF page
-            page.render({
-                canvasContext: context,
-                viewport: viewport
-            });
-        });
-    }
-
-    // Function to add page navigation
-    function addPageNavigation(pdf) {
-        const navigationContainer = document.createElement('div');
-        navigationContainer.style.display = 'flex';
-        navigationContainer.style.justifyContent = 'center';
-        navigationContainer.style.alignItems = 'center';
-        navigationContainer.style.padding = '10px';
-        navigationContainer.style.gap = '10px';
-        
-        // Previous page button
-        const prevButton = document.createElement('button');
-        prevButton.textContent = 'Previous';
-        prevButton.onclick = function() {
-            const currentPage = parseInt(document.getElementById('currentPage').textContent);
-            if (currentPage > 1) {
-                renderPage(pdf, currentPage - 1);
-                document.getElementById('currentPage').textContent = currentPage - 1;
-            }
-        };
-        
-        // Page number display
-        const pageDisplay = document.createElement('span');
-        pageDisplay.innerHTML = 'Page <span id="currentPage">1</span> of ' + pdf.numPages;
-        
-        // Next page button
-        const nextButton = document.createElement('button');
-        nextButton.textContent = 'Next';
-        nextButton.onclick = function() {
-            const currentPage = parseInt(document.getElementById('currentPage').textContent);
-            if (currentPage < pdf.numPages) {
-                renderPage(pdf, currentPage + 1);
-                document.getElementById('currentPage').textContent = currentPage + 1;
-            }
-        };
-        
-        // Add zoom controls
-        const zoomInButton = document.createElement('button');
-        zoomInButton.textContent = '+';
-        zoomInButton.onclick = function() {
-            const currentPage = parseInt(document.getElementById('currentPage').textContent);
-            renderPage(pdf, currentPage, 0.2);
-        };
-        
-        const zoomOutButton = document.createElement('button');
-        zoomOutButton.textContent = '-';
-        zoomOutButton.onclick = function() {
-            const currentPage = parseInt(document.getElementById('currentPage').textContent);
-            renderPage(pdf, currentPage, -0.2);
-        };
-        
-        navigationContainer.appendChild(prevButton);
-        navigationContainer.appendChild(pageDisplay);
-        navigationContainer.appendChild(nextButton);
-        navigationContainer.appendChild(zoomInButton);
-        navigationContainer.appendChild(zoomOutButton);
-        
-        // Add navigation below the viewer
-        const viewerContainer = document.getElementById('viewerContainer');
-        viewerContainer.parentNode.insertBefore(navigationContainer, viewerContainer.nextSibling);
-    }
-
     // Add styles for the PDF viewer
     const pdfViewerStyle = document.createElement('style');
     pdfViewerStyle.textContent = `
@@ -448,30 +339,8 @@ document.addEventListener("DOMContentLoaded", function () {
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         
-        #viewerContainer {
+        #pdf-iframe {
             background-color: white;
-        }
-        
-        #viewerContainer canvas {
-            margin: 0 auto;
-            display: block;
-        }
-        
-        button {
-            padding: 5px 10px;
-            margin: 0 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: white;
-            cursor: pointer;
-        }
-        
-        button:hover {
-            background-color: #f0f0f0;
-        }
-        
-        #currentPage {
-            font-weight: bold;
         }
     `;
     document.head.appendChild(pdfViewerStyle);
