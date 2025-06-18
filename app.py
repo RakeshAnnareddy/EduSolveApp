@@ -183,8 +183,10 @@ def upload_pdf():
         analyzer = PDFContentAnalyzer()
         structured_content = analyzer.analyze_content(full_text)
         
-        if "main_topics" not in structured_content:
-            raise ValueError("main_topics not found in analysis")
+        main_topics = structured_content.get("main_topics", [])
+        if not main_topics:
+            main_topics = ["Uncategorized"]
+            structured_content["main_topics"] = main_topics
 
         # Store in MongoDB
         pdf_doc = {
