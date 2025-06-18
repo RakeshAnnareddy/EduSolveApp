@@ -276,7 +276,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const pdfViewer = document.createElement('div');
             pdfViewer.id = 'pdf-viewer';
             pdfViewer.style.width = '100%';
-            pdfViewer.style.height = '600px';
+            pdfViewer.style.height = '100%';
             pdfViewer.style.marginBottom = '20px';
             pdfViewer.style.border = '1px solid #ddd';
             pdfViewer.style.borderRadius = '4px';
