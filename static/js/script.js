@@ -290,46 +290,56 @@ document.addEventListener("DOMContentLoaded", function () {
             viewerFrame.style.border = 'none';
             pdfViewer.appendChild(viewerFrame);
 
-            // Clear previous content and add new viewer
-            readerContent.innerHTML = '';
-            readerContent.style.display = 'block';
-            readerContent.appendChild(pdfViewer);
+           // Clear previous content and add new viewer
+readerContent.innerHTML = '';
+readerContent.style.display = 'block';
+readerContent.appendChild(pdfViewer);
 
-            // Create object URL for the PDF and set it as the iframe's src
-            const pdfUrl = URL.createObjectURL(file);
-            viewerFrame.src = pdfUrl;
-            
-            // Upload and analyze the PDF
-            const formData = new FormData();
-            formData.append('pdf', file);
-            formData.append('user_id', 'test_user_001');
+// Create object URL for the PDF and set it as the iframe's src
+const pdfUrl = URL.createObjectURL(file);
+viewerFrame.src = pdfUrl;
 
-            fetch('https://edusolveapp.onrender.com/upload-pdf', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    throw new Error(data.error);
-                }
-                currentPdfId = data.pdf_id;
-                
-                // Display initial analysis
-                const botMessage = document.createElement('div');
-                botMessage.classList.add('bot-message');
-                botMessage.innerHTML = '<h3>PDF Analysis Complete!</h3>' +
-                    '<p>Click "Summarize" to get a concise summary or "Explain" to get detailed explanations with real-world examples.</p>';
-                chatBox.appendChild(botMessage);
-                scrollToBottom();
-            })
-            .catch(error => {
-                console.error("Error:", error);
-                chatBox.innerHTML += `<div class="bot-message">Error analyzing PDF. Please try again later.</div>`;
-                scrollToBottom();
-            });
-        }
-    });
+// Upload and analyze the PDF
+const formData = new FormData();
+formData.append('pdf', file);
+formData.append('user_id', 'test_user_001');
+
+fetch('https://edusolveapp.onrender.com/upload-pdf', {
+    method: 'POST',
+    body: formData
+})
+.then(response => response.json())
+.then(data => {
+    console.log("Server Response:", data);
+
+    if (data.error) {
+        throw new Error(data.error);
+    }
+
+    if (!data.structured_content || !data.structured_content.main_topics) {
+        throw new Error("'main_topics' key is missing in structured_content");
+    }
+
+    currentPdfId = data.pdf_id;
+    const mainTopics = data.structured_content.main_topics;
+
+    // Display analysis result
+    const botMessage = document.createElement('div');
+    botMessage.classList.add('bot-message');
+    botMessage.innerHTML = `
+        <h3>PDF Analysis Complete!</h3>
+        <p><strong>Identified Topics:</strong> ${mainTopics.join(', ')}</p>
+        <p>Click "Summarize" to get a concise summary or "Explain" to get detailed explanations with real-world examples.</p>
+    `;
+    chatBox.appendChild(botMessage);
+    scrollToBottom();
+})
+.catch(error => {
+    console.error("Error:", error);
+    chatBox.innerHTML += `<div class="bot-message">Error analyzing PDF: ${error.message}</div>`;
+    scrollToBottom();
+});
+
 
     // Add styles for the PDF viewer
     const pdfViewerStyle = document.createElement('style');
@@ -468,6 +478,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     `;
     document.head.appendChild(style);
+}
 });
 
 
@@ -546,4 +557,6 @@ document.getElementById("fileUpload").addEventListener("change", async (e) => {
         sidebar.classList.toggle("collapsed");
         mainContent.classList.toggle("collapsed");
     });
+
+});
 });
