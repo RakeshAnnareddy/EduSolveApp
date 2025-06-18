@@ -1,28 +1,43 @@
 document.addEventListener("DOMContentLoaded", function () {
+    // --- Get all necessary DOM elements ---
     const chatBox = document.getElementById("chat-box");
     const searchInput = document.getElementById('searchInput');
     const actionButton = document.getElementById('actionButton');
     const actionIcon = document.getElementById('actionIcon');
-    const explainButton = document.getElementById('explainButton');
-    const summarizeButton = document.getElementById('summarizeButton');
+    const explainButton = document.getElementById('explainButton'); // Ensure this ID matches your HTML
+    const summarizeButton = document.getElementById('summarizeButton'); // Ensure this ID matches your HTML
     const fileUpload = document.getElementById('fileUpload');
     const readerContent = document.getElementById('reader-content');
     const fileNameDisplay = document.getElementById('file-name');
     const cancelUploadButton = document.getElementById('cancelUpload');
     const initialUploadArea = document.getElementById('initial-upload-area');
-   ;
 
+    // Sidebar elements (ensure these exist in your HTML)
+    const sidebar = document.getElementById("sidebar");
+    const mainContent = document.getElementById("main-content");
+    const menuToggle = document.getElementById("menu-toggle");
+
+    let currentPdfId = null; // Store the current PDF ID received from the server
+
+    // --- Utility Functions ---
     function scrollToBottom() {
-        chatBox.scrollTop = chatBox.scrollHeight;
+        if (chatBox) { // Add a check to ensure chatBox exists
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
     }
 
+    // Observer to automatically scroll chat to bottom when new messages are added
     const observer = new MutationObserver(() => {
         scrollToBottom();
     });
 
-    observer.observe(chatBox, { childList: true });
-    scrollToBottom();
+    if (chatBox) { // Only observe if chatBox exists
+        observer.observe(chatBox, { childList: true });
+        scrollToBottom(); // Scroll to bottom initially
+    }
 
+
+    // --- Search Input and Send Message Logic ---
     searchInput.addEventListener('input', function () {
         this.rows = this.value.split('\n').length; // Auto-adjust rows based on content
         if (searchInput.value.trim() !== '') {
@@ -74,17 +89,16 @@ document.addEventListener("DOMContentLoaded", function () {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 prompt: userInput,
-                user_id: "test_user_001",
-                focused_response: true // New parameter to indicate focused response
+                user_id: "test_user_001", // Make sure this user_id is handled consistently
+                focused_response: true
             })
         })
         .then(response => response.json())
         .then(data => {
-            // Remove loading message
-            loadingMessage.remove();
-            
+            loadingMessage.remove(); // Remove loading message
+
             let botResponse = data.response;
             let formattedResponse = formatBotResponse(botResponse);
 
@@ -96,11 +110,12 @@ document.addEventListener("DOMContentLoaded", function () {
             scrollToBottom();
         })
         .catch(error => {
-            // Remove loading message
-            loadingMessage.remove();
-            
-            console.error("Error:", error);
-            chatBox.innerHTML += `<div class="bot-message">Error generating response. Please try again later.</div>`;
+            loadingMessage.remove(); // Remove loading message
+            console.error("Error generating response:", error);
+            const errorMessage = document.createElement('div');
+            errorMessage.classList.add('bot-message');
+            errorMessage.innerHTML = `Error generating response. Please try again later.`;
+            chatBox.appendChild(errorMessage);
             scrollToBottom();
         });
     }
@@ -114,12 +129,12 @@ document.addEventListener("DOMContentLoaded", function () {
                 </svg>
             </span>
         `;
-        actionButton.onclick = undefined;
+        actionButton.onclick = undefined; // Clear previous click handler
     }
 
     function formatBotResponse(botResponse) {
         let formattedResponse = botResponse;
-    
+
         // =========================================================================
         //  Heading Styles
         //  -----------------------------------------------------------------------
@@ -131,7 +146,7 @@ document.addEventListener("DOMContentLoaded", function () {
         formattedResponse = formattedResponse.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
         formattedResponse = formattedResponse.replace(/^##### (.*)$/gm, '<h5>$1</h5>');
         formattedResponse = formattedResponse.replace(/^###### (.*)$/gm, '<h6>$1</h6>');
-    
+
         // =========================================================================
         //  Code Block Styles
         //  -----------------------------------------------------------------------
@@ -139,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // =========================================================================
         formattedResponse = formattedResponse.replace(/```(\w+)?\n([\s\S]+?)```/g, (match, lang, code) => {
             lang = lang || "plaintext";
-    
+
             // Function to generate language-specific comment prefix
             function getCommentPrefix(language) {
                 switch (language.toLowerCase()) {
@@ -170,15 +185,15 @@ document.addEventListener("DOMContentLoaded", function () {
                         return "# ";
                 }
             }
-    
+
             const commentPrefix = getCommentPrefix(lang);
-    
+
             // Clean up stray h1-h6 tags and treat their content as comments
             const cleanedCode = code.replace(/<h\d>([^<]+)<\/h\d>/g, (match, content) => {
                 const commentedLines = content.split('\n').map(line => `${commentPrefix}${line}`);
                 return commentedLines.join('\n');
             });
-    
+
             return `
                 <div class="code-block">
                     <span class="language-indicator">${escapeHTML(lang)}</span>
@@ -187,28 +202,34 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
             `;
         });
-    
+
         // =========================================================================
         //  Unordered List Styles
         //  -----------------------------------------------------------------------
         //  Detect and style unordered lists.
         // =========================================================================
+        // Ensure lists are properly formed and not nested incorrectly by replacing temporary markers
         formattedResponse = formattedResponse.replace(/\n\* (.+)/g, '<ul><li>$1</li></ul>');
         formattedResponse = formattedResponse.replace(/<\/ul>\s*<ul>/g, '');
-    
+
+
         // =========================================================================
         //  Ordered List Styles
         //  -----------------------------------------------------------------------
         //  Detect and style ordered lists.
         // =========================================================================
+        // Ensure lists are properly formed and not nested incorrectly by replacing temporary markers
         formattedResponse = formattedResponse.replace(/\n\d+\.\s+(.+)/g, '<ol><li>$1</li></ol>');
         formattedResponse = formattedResponse.replace(/<\/ol>\s*<ol>/g, '');
-    
+
         // =========================================================================
-        //  Table Styles
+        //  Table Styles - NOTE: This regex needs to be more robust for full Markdown tables.
         //  -----------------------------------------------------------------------
-        //  Detect and style tables.
+        //  Detect and style tables. Basic example, may need enhancement for complex tables.
         // =========================================================================
+        // This simple regex for tables is problematic. A more robust parser is needed for full Markdown tables.
+        // For now, I'm commenting it out as it often misinterprets pipe characters.
+        /*
         formattedResponse = formattedResponse.replace(/\|(.+?)\|(.+?)\|/g, (match, header, data) => {
             const headers = header.split('|').map(h => h.trim());
             const rows = data.split('|').map(r => r.trim());
@@ -218,59 +239,66 @@ document.addEventListener("DOMContentLoaded", function () {
             tableHTML += '</tr></thead><tbody><tr>';
             rows.forEach(r => tableHTML += `<td>${r}</td>`);
             tableHTML += '</tr></tbody></table>';
+            return tableHTML;
         });
-    
+        */
+
         return formattedResponse;
     }
-    
+
     // =============================================================================
     //  escapeHTML Function
     //  ---------------------------------------------------------------------------
-    //  Escapes HTML special characters.
+    //  Escapes HTML special characters to prevent XSS and ensure proper display.
     // =============================================================================
     function escapeHTML(str) {
-        return str.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
-    
+
     // =============================================================================
-    //  copyCode Function
+    //  copyCode Function (Global - accessible from onclick)
     //  ---------------------------------------------------------------------------
-    //  Copies code to the clipboard.
+    //  Copies code from a code block to the clipboard.
     // =============================================================================
     window.copyCode = function(button) {
-        // Correctly select the code within the <pre><code> element
         let codeBlock = button.previousElementSibling.querySelector('code').innerText;
         navigator.clipboard.writeText(codeBlock)
             .then(() => {
                 button.innerText = "Copied!";
                 setTimeout(() => button.innerText = "Copy", 2000);
             })
-            .catch(err => console.error("Error copying:", err));
+            .catch(err => console.error("Error copying code:", err));
     };
 
-    if (cancelUploadButton) {
+
+    // --- File Upload and PDF Processing Logic ---
+    if (cancelUploadButton && fileNameDisplay && readerContent && initialUploadArea) {
         cancelUploadButton.addEventListener('click', function() {
             fileUpload.value = ''; // Clear the file input
             fileNameDisplay.style.display = 'none';
             cancelUploadButton.style.display = 'none';
             readerContent.innerHTML = '';
-            readerContent.style.display = 'flex';
+            readerContent.style.display = 'flex'; // Reset to flex for initial upload area
             readerContent.appendChild(initialUploadArea);
+            currentPdfId = null; // Clear the PDF ID
+            // Optionally disable buttons again if no PDF is loaded
+            if (summarizeButton) summarizeButton.disabled = true;
+            if (explainButton) explainButton.disabled = true;
         });
     }
 
-    let currentPdfId = null; // Store the current PDF ID
-
-    fileUpload.addEventListener('change', function() {
+    // Main file upload change listener
+    fileUpload.addEventListener('change', async function() {
         if (this.files.length > 0) {
             const file = this.files[0];
             fileNameDisplay.textContent = file.name;
             fileNameDisplay.style.display = 'block';
             cancelUploadButton.style.display = 'block';
-            
-            // Enable the summarize and explain buttons
-            summarizeButton.disabled = false;
-            explainButton.disabled = false;
+
+            // --- Enable the summarize and explain buttons IMMEDIATELY after file selection ---
+            if (summarizeButton) summarizeButton.disabled = false;
+            if (explainButton) explainButton.disabled = false;
+            console.log("Summarize and Explain buttons enabled."); // Debugging line
 
             // Create PDF viewer container
             const pdfViewer = document.createElement('div');
@@ -290,175 +318,219 @@ document.addEventListener("DOMContentLoaded", function () {
             viewerFrame.style.border = 'none';
             pdfViewer.appendChild(viewerFrame);
 
-           // Clear previous content and add new viewer
-readerContent.innerHTML = '';
-readerContent.style.display = 'block';
-readerContent.appendChild(pdfViewer);
+            // Clear previous content and add new viewer
+            readerContent.innerHTML = '';
+            readerContent.style.display = 'block'; // Ensure it's block for PDF viewer
+            readerContent.appendChild(pdfViewer);
 
-// Create object URL for the PDF and set it as the iframe's src
-const pdfUrl = URL.createObjectURL(file);
-viewerFrame.src = pdfUrl;
+            // Create object URL for the PDF and set it as the iframe's src
+            const pdfUrl = URL.createObjectURL(file);
+            viewerFrame.src = pdfUrl;
 
-// Upload and analyze the PDF
-const formData = new FormData();
-formData.append('pdf', file);
-formData.append('user_id', 'test_user_001');
+            // Upload and analyze the PDF
+            const formData = new FormData();
+            formData.append('pdf', file);
+            // Use a consistent user_id, either from localStorage or hardcoded as per your backend needs
+            const userId = localStorage.getItem("user_id") || "test_user_001";
+            formData.append('user_id', userId);
 
-fetch('https://edusolveapp.onrender.com/upload-pdf', {
-    method: 'POST',
-    body: formData
-})
-.then(response => response.json())
-.then(data => {
-    console.log("Server Response:", data);
+            // Add loading message for PDF analysis
+            const pdfLoadingMessage = document.createElement('div');
+            pdfLoadingMessage.classList.add('bot-message');
+            pdfLoadingMessage.innerHTML = '<div class="loading">Analyzing PDF content...</div>';
+            chatBox.appendChild(pdfLoadingMessage);
+            scrollToBottom();
 
-    if (data.error) {
-        throw new Error(data.error);
-    }
+            try {
+                const response = await fetch('https://edusolveapp.onrender.com/upload-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
 
-    if (!data.structured_content || !data.structured_content.main_topics) {
-        throw new Error("'main_topics' key is missing in structured_content");
-    }
+                const data = await response.json();
+                console.log("Server Response (PDF Upload):", data);
 
-    currentPdfId = data.pdf_id;
-    const mainTopics = data.structured_content.main_topics;
+                // Remove loading message for PDF analysis
+                pdfLoadingMessage.remove();
 
-    // Display analysis result
-    const botMessage = document.createElement('div');
-    botMessage.classList.add('bot-message');
-    botMessage.innerHTML = `
-        <h3>PDF Analysis Complete!</h3>
-        <p><strong>Identified Topics:</strong> ${mainTopics.join(', ')}</p>
-        <p>Click "Summarize" to get a concise summary or "Explain" to get detailed explanations with real-world examples.</p>
-    `;
-    chatBox.appendChild(botMessage);
-    scrollToBottom();
-})
-.catch(error => {
-    console.error("Error:", error);
-    chatBox.innerHTML += `<div class="bot-message">Error analyzing PDF: ${error.message}</div>`;
-    scrollToBottom();
-});
+                if (data.error) {
+                    throw new Error(data.error);
+                }
 
+                // Check for 'main_topics' specifically within 'structured_content'
+                if (!data.structured_content || !data.structured_content.main_topics) {
+                    throw new Error("Server response missing 'structured_content' or 'main_topics'.");
+                }
 
-    // Add styles for the PDF viewer
+                currentPdfId = data.pdf_id;
+                const mainTopics = data.structured_content.main_topics;
+
+                // Display analysis result
+                const botMessage = document.createElement('div');
+                botMessage.classList.add('bot-message');
+                botMessage.innerHTML = `
+                    <h3>PDF Analysis Complete!</h3>
+                    <p><strong>Identified Topics:</strong> ${mainTopics.join(', ')}</p>
+                    <p>Click "Summarize" to get a concise summary or "Explain" to get detailed explanations with real-world examples.</p>
+                `;
+                chatBox.appendChild(botMessage);
+                scrollToBottom();
+
+                // If the second fileUpload event listener was intended for analysis display, merge it here.
+                // The original code had a separate listener doing analysis.
+                if (data.analysis) {
+                    const analysisOutput = document.getElementById("analysisOutput");
+                    if (analysisOutput) {
+                        analysisOutput.innerText = data.analysis;
+                    } else {
+                        // If there's no dedicated 'analysisOutput' element, append to chatBox
+                        const analysisMessage = document.createElement('div');
+                        analysisMessage.classList.add('bot-message');
+                        analysisMessage.innerHTML = `<h3>Raw Analysis Output:</h3><pre>${escapeHTML(data.analysis)}</pre>`;
+                        chatBox.appendChild(analysisMessage);
+                        scrollToBottom();
+                    }
+                }
+
+            } catch (error) {
+                pdfLoadingMessage.remove(); // Remove loading message
+                console.error("Error analyzing PDF:", error);
+                const errorMessage = document.createElement('div');
+                errorMessage.classList.add('bot-message');
+                errorMessage.innerHTML = `Error analyzing PDF: ${error.message || error}. Please try again.`;
+                chatBox.appendChild(errorMessage);
+                scrollToBottom();
+            }
+        }
+    });
+
+    // Add styles for the PDF viewer (can be moved to CSS file)
     const pdfViewerStyle = document.createElement('style');
     pdfViewerStyle.textContent = `
         #pdf-viewer {
             background-color: #f5f5f5;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        
+
         #pdf-iframe {
             background-color: white;
         }
     `;
     document.head.appendChild(pdfViewerStyle);
 
-    // Modify summarize button handler
-    summarizeButton.addEventListener('click', function() {
-        if (!currentPdfId) {
-            alert('Please upload a PDF first!');
-            return;
-        }
+    // --- Summarize Button Handler ---
+    if (summarizeButton) { // Ensure button exists before adding listener
+        summarizeButton.addEventListener('click', function() {
+            if (!currentPdfId) {
+                alert('Please upload a PDF first to summarize!');
+                return;
+            }
 
-        const loadingMessage = document.createElement('div');
-        loadingMessage.classList.add('bot-message');
-        loadingMessage.innerHTML = '<div class="loading">Generating summary...</div>';
-        chatBox.appendChild(loadingMessage);
-        scrollToBottom();
+            const loadingMessage = document.createElement('div');
+            loadingMessage.classList.add('bot-message');
+            loadingMessage.innerHTML = '<div class="loading">Generating summary...</div>';
+            chatBox.appendChild(loadingMessage);
+            scrollToBottom();
 
-        fetch('https://edusolveapp.onrender.com/get-suggestions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                pdf_id: currentPdfId,
-                topic: 'summary',
-                focused_response: true
+            fetch('https://edusolveapp.onrender.com/get-suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pdf_id: currentPdfId,
+                    topic: 'summary',
+                    focused_response: true
+                })
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            loadingMessage.remove();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
+            .then(response => response.json())
+            .then(data => {
+                loadingMessage.remove(); // Remove loading message
 
-            const summaryMessage = document.createElement('div');
-            summaryMessage.classList.add('bot-message');
-            summaryMessage.innerHTML = formatBotResponse(data.suggestions.summary || 'Summary not available');
-            chatBox.appendChild(summaryMessage);
-            scrollToBottom();
-        })
-        .catch(error => {
-            loadingMessage.remove();
-            console.error("Error:", error);
-            chatBox.innerHTML += `<div class="bot-message">Error generating summary. Please try again later.</div>`;
-            scrollToBottom();
-        });
-    });
+                if (data.error) {
+                    throw new Error(data.error);
+                }
 
-    // Modify explain button handler
-    explainButton.addEventListener('click', function() {
-        if (!currentPdfId) {
-            alert('Please upload a PDF first!');
-            return;
-        }
-
-        const loadingMessage = document.createElement('div');
-        loadingMessage.classList.add('bot-message');
-        loadingMessage.innerHTML = '<div class="loading">Generating explanation...</div>';
-        chatBox.appendChild(loadingMessage);
-        scrollToBottom();
-
-        fetch('https://edusolveapp.onrender.com/get-suggestions', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                pdf_id: currentPdfId,
-                topic: 'explanation',
-                level: 'high_school',
-                focused_response: true
+                const summaryMessage = document.createElement('div');
+                summaryMessage.classList.add('bot-message');
+                summaryMessage.innerHTML = formatBotResponse(data.suggestions?.summary || 'Summary not available.');
+                chatBox.appendChild(summaryMessage);
+                scrollToBottom();
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            loadingMessage.remove();
-            
-            if (data.error) {
-                throw new Error(data.error);
-            }
-
-            const explanationMessage = document.createElement('div');
-            explanationMessage.classList.add('bot-message');
-            
-            // Only include the requested explanation without additional suggestions
-            let formattedExplanation = '';
-            
-            if (data.suggestions.explanation) {
-                formattedExplanation = formatBotResponse(data.suggestions.explanation);
-            } else if (data.suggestions.concepts) {
-                formattedExplanation = formatBotResponse(data.suggestions.concepts);
-            }
-            
-            explanationMessage.innerHTML = formattedExplanation || 'Explanation not available';
-            chatBox.appendChild(explanationMessage);
-            scrollToBottom();
-        })
-        .catch(error => {
-            loadingMessage.remove();
-            console.error("Error:", error);
-            chatBox.innerHTML += `<div class="bot-message">Error generating explanation. Please try again later.</div>`;
-            scrollToBottom();
+            .catch(error => {
+                loadingMessage.remove(); // Remove loading message
+                console.error("Error generating summary:", error);
+                const errorMessage = document.createElement('div');
+                errorMessage.classList.add('bot-message');
+                errorMessage.innerHTML = `Error generating summary: ${error.message || error}. Please try again later.`;
+                chatBox.appendChild(errorMessage);
+                scrollToBottom();
+            });
         });
-    });
+    }
 
-    // Add loading animation styles
+
+    // --- Explain Button Handler ---
+    if (explainButton) { // Ensure button exists before adding listener
+        explainButton.addEventListener('click', function() {
+            if (!currentPdfId) {
+                alert('Please upload a PDF first to get an explanation!');
+                return;
+            }
+
+            const loadingMessage = document.createElement('div');
+            loadingMessage.classList.add('bot-message');
+            loadingMessage.innerHTML = '<div class="loading">Generating explanation...</div>';
+            chatBox.appendChild(loadingMessage);
+            scrollToBottom();
+
+            fetch('https://edusolveapp.onrender.com/get-suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pdf_id: currentPdfId,
+                    topic: 'explanation',
+                    level: 'high_school', // You might want to make this configurable
+                    focused_response: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingMessage.remove(); // Remove loading message
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                const explanationMessage = document.createElement('div');
+                explanationMessage.classList.add('bot-message');
+
+                let formattedExplanation = '';
+                if (data.suggestions?.explanation) {
+                    formattedExplanation = formatBotResponse(data.suggestions.explanation);
+                } else if (data.suggestions?.concepts) { // Fallback if 'explanation' isn't direct
+                    formattedExplanation = formatBotResponse(data.suggestions.concepts);
+                }
+
+                explanationMessage.innerHTML = formattedExplanation || 'Explanation not available.';
+                chatBox.appendChild(explanationMessage);
+                scrollToBottom();
+            })
+            .catch(error => {
+                loadingMessage.remove(); // Remove loading message
+                console.error("Error generating explanation:", error);
+                const errorMessage = document.createElement('div');
+                errorMessage.classList.add('bot-message');
+                errorMessage.innerHTML = `Error generating explanation: ${error.message || error}. Please try again later.`;
+                chatBox.appendChild(errorMessage);
+                scrollToBottom();
+            });
+        });
+    }
+
+    // --- Loading Animation Styles (can be moved to CSS file) ---
     const style = document.createElement('style');
     style.textContent = `
         .loading {
@@ -478,13 +550,10 @@ fetch('https://edusolveapp.onrender.com/upload-pdf', {
         }
     `;
     document.head.appendChild(style);
-}
-});
 
 
-document.addEventListener('DOMContentLoaded', function() {
-    const chatBox = document.getElementById('chat-box');
-
+    // --- Chatbox Selection Prevention Logic ---
+    // Consolidated this into the main DOMContentLoaded
     if (chatBox) {
         chatBox.addEventListener('selectstart', function(e) {
             if (e.target.classList.contains('bot-message') || e.target.closest('.bot-message')) {
@@ -514,49 +583,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
 
-document.getElementById("fileUpload").addEventListener("change", async (e) => {
-    const file = e.target.files[0];
-    const userId = localStorage.getItem("user_id"); // Make sure user_id is stored
-  
-    if (!file || !userId) {
-      alert("PDF or User ID missing!");
-      return;
+    // --- Sidebar Toggle Logic ---
+    // Consolidated this into the main DOMContentLoaded
+    if (menuToggle && sidebar && mainContent) { // Ensure these elements exist
+        menuToggle.addEventListener("click", () => {
+            sidebar.classList.toggle("collapsed");
+            mainContent.classList.toggle("collapsed");
+        });
     }
-  
-    const formData = new FormData();
-    formData.append("pdf", file);
-    formData.append("user_id", userId);
-  
-    try {
-      const response = await fetch("https://edusolveapp.onrender.com/upload-pdf", {
-        method: "POST",
-        body: formData,
-      });
-  
-      const data = await response.json();
-  
-      if (data.analysis) {
-        // Display analysis below the PDF or in a sidebar
-        document.getElementById("analysisOutput").innerText = data.analysis;
-      } else {
-        alert("Error analyzing PDF: " + data.error);
-      }
-    } catch (err) {
-      console.error("Upload failed:", err);
-    }
-  });
-  
-  document.addEventListener("DOMContentLoaded", function () {
-    const sidebar = document.getElementById("sidebar");
-    const mainContent = document.getElementById("main-content");
-    const menuToggle = document.getElementById("menu-toggle");
-
-    menuToggle.addEventListener("click", () => {
-        sidebar.classList.toggle("collapsed");
-        mainContent.classList.toggle("collapsed");
-    });
-
-});
-});
+}); // This is the ONLY closing brace for the initial DOMContentLoaded.
