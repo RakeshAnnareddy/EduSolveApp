@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchInput = document.getElementById('searchInput');
     const actionButton = document.getElementById('actionButton');
     const actionIcon = document.getElementById('actionIcon');
-    const explainButton = document.getElementById('explainButton'); // Ensure this ID matches your HTML
-    const summarizeButton = document.getElementById('summarizeButton'); // Ensure this ID matches your HTML
+    const explainButton = document.getElementById('explainButton'); 
+    const summarizeButton = document.getElementById('summarizeButton'); 
     const fileUpload = document.getElementById('fileUpload');
     const readerContent = document.getElementById('reader-content');
     const fileNameDisplay = document.getElementById('file-name');
